@@ -1,0 +1,15 @@
+# Local database credentials
+/app/config.local.php
+/.env
+/.env.*
+
+# Uploaded CMS media (keep the upload directory itself)
+/uploads/*
+!/uploads/.gitkeep
+!/uploads/web.config
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
