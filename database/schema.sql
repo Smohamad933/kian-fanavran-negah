@@ -116,7 +116,7 @@ CREATE TABLE IF NOT EXISTS brand_media (
     media_type ENUM('image', 'video') NOT NULL DEFAULT 'image',
     media_path VARCHAR(500) NOT NULL DEFAULT '',
     poster_path VARCHAR(500) NOT NULL DEFAULT '',
-    aspect_ratio ENUM('16:9', '9:16', '1:1') NOT NULL DEFAULT '16:9',
+    aspect_ratio VARCHAR(5) NOT NULL DEFAULT '16:9',
     sort_order INT NOT NULL DEFAULT 0,
     is_published TINYINT(1) NOT NULL DEFAULT 1,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -124,6 +124,24 @@ CREATE TABLE IF NOT EXISTS brand_media (
     PRIMARY KEY (id),
     KEY idx_brand_media_public_order (brand_id, is_published, sort_order),
     CONSTRAINT fk_brand_media_brand FOREIGN KEY (brand_id) REFERENCES brands (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Convert the legacy ratio ENUM so 4:5 can be stored, keeping this migration repeatable.
+SET @brand_media_ratio_type = (SELECT data_type FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'brand_media' AND column_name = 'aspect_ratio' LIMIT 1);
+SET @brand_media_ratio_sql = IF(@brand_media_ratio_type = 'enum', 'ALTER TABLE brand_media MODIFY COLUMN aspect_ratio VARCHAR(5) NOT NULL DEFAULT ''16:9''', 'SELECT 1 INTO @brand_media_ratio_noop');
+PREPARE brand_media_ratio_stmt FROM @brand_media_ratio_sql;
+EXECUTE brand_media_ratio_stmt;
+DEALLOCATE PREPARE brand_media_ratio_stmt;
+
+CREATE TABLE IF NOT EXISTS brand_media_slides (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    brand_media_id INT UNSIGNED NOT NULL,
+    image_path VARCHAR(500) NOT NULL,
+    sort_order INT UNSIGNED NOT NULL DEFAULT 0,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_brand_media_slides_order (brand_media_id, sort_order, id),
+    CONSTRAINT fk_brand_media_slide_post FOREIGN KEY (brand_media_id) REFERENCES brand_media (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS inquiries (

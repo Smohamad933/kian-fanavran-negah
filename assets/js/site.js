@@ -56,6 +56,59 @@
     });
   });
 
+  const carousels = document.querySelectorAll('[data-carousel]');
+  carousels.forEach((carousel) => {
+    const track = carousel.querySelector('[data-carousel-track]');
+    const slides = Array.from(carousel.querySelectorAll('.brand-carousel-slide'));
+    const dots = Array.from(carousel.querySelectorAll('[data-carousel-dot]'));
+    const counter = carousel.querySelector('[data-carousel-counter]');
+    if (!track || slides.length < 2) return;
+
+    let activeIndex = 0;
+    const localizeNumber = (value) => new Intl.NumberFormat('fa-IR').format(value);
+    const showSlide = (requestedIndex) => {
+      activeIndex = (requestedIndex + slides.length) % slides.length;
+      track.style.transform = `translateX(-${activeIndex * 100}%)`;
+      slides.forEach((slide, index) => {
+        if (index === activeIndex) slide.removeAttribute('aria-hidden');
+        else slide.setAttribute('aria-hidden', 'true');
+      });
+      dots.forEach((dot, index) => {
+        if (index === activeIndex) dot.setAttribute('aria-current', 'true');
+        else dot.removeAttribute('aria-current');
+      });
+      if (counter) counter.textContent = `${localizeNumber(activeIndex + 1)} / ${localizeNumber(slides.length)}`;
+    };
+
+    carousel.querySelector('[data-carousel-prev]')?.addEventListener('click', () => showSlide(activeIndex - 1));
+    carousel.querySelector('[data-carousel-next]')?.addEventListener('click', () => showSlide(activeIndex + 1));
+    dots.forEach((dot) => dot.addEventListener('click', () => showSlide(Number(dot.dataset.carouselDot) || 0)));
+    carousel.addEventListener('keydown', (event) => {
+      if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        showSlide(activeIndex + 1);
+      } else if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        showSlide(activeIndex - 1);
+      }
+    });
+
+    let pointerStartX = null;
+    carousel.addEventListener('pointerdown', (event) => {
+      if (!['touch', 'pen'].includes(event.pointerType) || event.target.closest('button')) return;
+      pointerStartX = event.clientX;
+      if (carousel.setPointerCapture) carousel.setPointerCapture(event.pointerId);
+    });
+    carousel.addEventListener('pointerup', (event) => {
+      if (pointerStartX === null) return;
+      const distance = event.clientX - pointerStartX;
+      if (Math.abs(distance) > 45) showSlide(activeIndex + (distance < 0 ? 1 : -1));
+      pointerStartX = null;
+    });
+    carousel.addEventListener('pointercancel', () => { pointerStartX = null; });
+    showSlide(0);
+  });
+
   const progress = document.querySelector('.scroll-progress span');
   let ticking = false;
   const updateProgress = () => {

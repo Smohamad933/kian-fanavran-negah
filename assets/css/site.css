@@ -587,7 +587,24 @@ body.has-js [data-reveal].is-visible { opacity: 1; transform: none; }
 .brand-media-frame--landscape { aspect-ratio: 16 / 9; }
 .brand-media-frame--portrait { aspect-ratio: 9 / 16; }
 .brand-media-frame--square { aspect-ratio: 1 / 1; }
+.brand-media-frame--four-five { aspect-ratio: 4 / 5; }
 .brand-media-frame img, .brand-media-frame video { display: block; width: 100%; height: 100%; object-fit: contain; }
+.brand-carousel { position: relative; display: block; isolation: isolate; touch-action: pan-y; }
+.brand-carousel-viewport { width: 100%; height: 100%; overflow: hidden; }
+.brand-carousel-track { display: flex; width: 100%; height: 100%; direction: ltr; transition: transform .32s ease; will-change: transform; }
+.brand-carousel-slide { display: grid; flex: 0 0 100%; place-items: center; width: 100%; height: 100%; }
+.brand-carousel-slide img { flex: none; user-select: none; }
+.brand-carousel-control { position: absolute; z-index: 2; top: 50%; display: grid; place-items: center; width: 37px; height: 37px; padding: 0; border: 1px solid rgba(255,255,255,.55); border-radius: 50%; color: #fff; background: rgba(20,31,28,.56); cursor: pointer; transform: translateY(-50%); transition: background .2s ease, opacity .2s ease; }
+.brand-carousel-control:hover, .brand-carousel-control:focus-visible { background: rgba(20,31,28,.88); outline: 2px solid rgba(255,255,255,.8); outline-offset: 2px; }
+.brand-carousel-control span { margin-top: -3px; font-family: Arial,sans-serif; font-size: 29px; line-height: 1; }
+.brand-carousel-prev { right: 11px; }
+.brand-carousel-next { left: 11px; }
+.brand-carousel-dots { position: absolute; z-index: 2; right: 50%; bottom: 13px; display: flex; align-items: center; gap: 7px; transform: translateX(50%); }
+.brand-carousel-dots button { width: 7px; height: 7px; padding: 0; border: 0; border-radius: 50%; background: rgba(255,255,255,.55); cursor: pointer; transition: transform .2s ease, background .2s ease; }
+.brand-carousel-dots button[aria-current="true"] { background: #fff; box-shadow: 0 1px 5px rgba(0,0,0,.35); transform: scale(1.25); }
+.brand-carousel-dots button:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+.brand-carousel-counter { position: absolute; z-index: 2; top: 11px; left: 11px; padding: 3px 8px; border-radius: 999px; color: #fff; background: rgba(20,31,28,.57); direction: ltr; font-size: 10px; line-height: 1.5; }
+@media (prefers-reduced-motion: reduce) { .brand-carousel-track, .brand-carousel-control, .brand-carousel-dots button { transition: none; } }
 .brand-media-caption { padding: 16px 18px 18px; }
 .brand-media-caption h3 { color: #273b36; font-size: 13px; line-height: 1.8; }
 .brand-media-caption p { margin-top: 5px; color: #7a847d; font-size: 10px; line-height: 1.9; }

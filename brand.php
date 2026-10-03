@@ -7,6 +7,7 @@ $data = load_site_data($pdo);
 $slug = trim((string) ($_GET['slug'] ?? ''));
 $brand = null;
 $media = [];
+$mediaSlides = [];
 
 if ($slug !== '' && $pdo !== null) {
     try {
@@ -18,6 +19,20 @@ if ($slug !== '' && $pdo !== null) {
                 $mediaStatement = $pdo->prepare('SELECT * FROM brand_media WHERE brand_id = :brand_id AND is_published = 1 AND media_path <> \'\' ORDER BY sort_order ASC, id DESC');
                 $mediaStatement->execute(['brand_id' => (int) $brand['id']]);
                 $media = $mediaStatement->fetchAll();
+                if ($media !== []) {
+                    $mediaIds = array_map(static fn($item) => (int) $item['id'], $media);
+                    $placeholders = implode(', ', array_fill(0, count($mediaIds), '?'));
+                    try {
+                        $slideStatement = $pdo->prepare('SELECT brand_media_id, image_path FROM brand_media_slides WHERE brand_media_id IN (' . $placeholders . ') ORDER BY brand_media_id ASC, sort_order ASC, id ASC');
+                        $slideStatement->execute($mediaIds);
+                        foreach ($slideStatement->fetchAll() as $slide) {
+                            $safeSlide = safe_image_src((string) $slide['image_path'], '');
+                            if ($safeSlide !== '') $mediaSlides[(int) $slide['brand_media_id']][] = $safeSlide;
+                        }
+                    } catch (Throwable $exception) {
+                        $mediaSlides = [];
+                    }
+                }
             } catch (Throwable $exception) {
                 $media = [];
             }
@@ -118,7 +133,7 @@ $customFontFormat = match (strtolower(pathinfo($customFontPath, PATHINFO_EXTENSI
                 <div class="container">
                     <div class="section-heading section-heading-split" data-reveal>
                         <div><div class="eyebrow"><span class="eyebrow-mark"></span>آرشیو محتوایی برند</div><h2>قاب‌هایی از روایت <?= e($brandName) ?></h2></div>
-                        <div class="heading-side"><p>ویدیوها و تصاویر این آرشیو با حفظ نسبت اصلی‌شان نمایش داده می‌شوند؛ افقی، عمودی یا مربعی.</p><span class="archive-count"><?= fa_num((string) count($media)) ?> محتوا</span></div>
+                        <div class="heading-side"><p>ویدیوها و تصویرها با نسبت‌های افقی، عمودی، مربعی یا ۴:۵ نمایش داده می‌شوند؛ پست‌های اسلایدی را ورق بزنید.</p><span class="archive-count"><?= fa_num((string) count($media)) ?> محتوا</span></div>
                     </div>
 
                     <?php if ($media !== []): ?>
@@ -128,17 +143,35 @@ $customFontFormat = match (strtolower(pathinfo($customFontPath, PATHINFO_EXTENSI
                                 $mediaPath = safe_media_src($item['media_path'] ?? '', '');
                                 $posterPath = safe_image_src($item['poster_path'] ?? '', '');
                                 if ($mediaPath === '') continue;
-                                $ratio = in_array(($item['aspect_ratio'] ?? ''), ['16:9', '9:16', '1:1'], true) ? $item['aspect_ratio'] : '16:9';
-                                $ratioClass = $ratio === '9:16' ? 'portrait' : ($ratio === '1:1' ? 'square' : 'landscape');
+                                $mediaType = (string) ($item['media_type'] ?? 'image');
+                                $slideImages = $mediaType === 'image' ? ($mediaSlides[(int) $item['id']] ?? []) : [];
+                                if ($mediaType === 'image' && $slideImages === []) $slideImages = [$mediaPath];
+                                $hasCarousel = count($slideImages) > 1;
+                                $ratio = in_array(($item['aspect_ratio'] ?? ''), ['16:9', '9:16', '1:1', '4:5'], true) ? $item['aspect_ratio'] : '16:9';
+                                $ratioClass = match ($ratio) { '9:16' => 'portrait', '1:1' => 'square', '4:5' => 'four-five', default => 'landscape' };
                                 $extension = strtolower(pathinfo((string) (parse_url($mediaPath, PHP_URL_PATH) ?: ''), PATHINFO_EXTENSION));
                                 $videoMime = $extension === 'webm' ? 'video/webm' : 'video/mp4';
                                 ?>
                                 <article class="brand-media-card" data-reveal data-reveal-delay="<?= e((string) (($index % 3) * 70)) ?>">
-                                    <div class="brand-media-frame brand-media-frame--<?= e($ratioClass) ?>">
-                                        <?php if (($item['media_type'] ?? 'image') === 'video'): ?>
+                                    <div class="brand-media-frame brand-media-frame--<?= e($ratioClass) ?><?= $hasCarousel ? ' brand-carousel' : '' ?>"<?= $hasCarousel ? ' data-carousel tabindex="0" aria-roledescription="carousel" aria-label="پست چنداسلایدی ' . e($item['title'] ?? $brandName) . '"' : '' ?>>
+                                        <?php if ($mediaType === 'video'): ?>
                                             <video controls playsinline preload="metadata"<?= $posterPath !== '' ? ' poster="' . e($posterPath) . '"' : '' ?>><source src="<?= e($mediaPath) ?>" type="<?= e($videoMime) ?>">مرورگر شما از پخش این ویدیو پشتیبانی نمی‌کند.</video>
+                                        <?php elseif ($hasCarousel): ?>
+                                            <div class="brand-carousel-viewport"><div class="brand-carousel-track" data-carousel-track>
+                                                <?php foreach ($slideImages as $slideIndex => $slideImage): ?>
+                                                    <div class="brand-carousel-slide" role="group" aria-roledescription="اسلاید" aria-label="اسلاید <?= fa_num((string) ($slideIndex + 1)) ?> از <?= fa_num((string) count($slideImages)) ?>"<?= $slideIndex === 0 ? '' : ' aria-hidden="true"' ?>><img src="<?= e($slideImage) ?>" alt="<?= e($item['title'] ?? $brandName) ?>، اسلاید <?= fa_num((string) ($slideIndex + 1)) ?>" loading="lazy" draggable="false"></div>
+                                                <?php endforeach; ?>
+                                            </div></div>
+                                            <button class="brand-carousel-control brand-carousel-prev" type="button" data-carousel-prev aria-label="اسلاید قبلی"><span aria-hidden="true">‹</span></button>
+                                            <button class="brand-carousel-control brand-carousel-next" type="button" data-carousel-next aria-label="اسلاید بعدی"><span aria-hidden="true">›</span></button>
+                                            <span class="brand-carousel-counter" data-carousel-counter aria-live="polite"><?= fa_num('1') ?> / <?= fa_num((string) count($slideImages)) ?></span>
+                                            <div class="brand-carousel-dots" role="group" aria-label="انتخاب اسلاید">
+                                                <?php foreach ($slideImages as $slideIndex => $slideImage): ?>
+                                                    <button type="button" data-carousel-dot="<?= e((string) $slideIndex) ?>" aria-label="نمایش اسلاید <?= fa_num((string) ($slideIndex + 1)) ?>"<?= $slideIndex === 0 ? ' aria-current="true"' : '' ?>></button>
+                                                <?php endforeach; ?>
+                                            </div>
                                         <?php else: ?>
-                                            <img src="<?= e($mediaPath) ?>" alt="<?= e($item['title'] ?? $brandName) ?>" loading="lazy">
+                                            <img src="<?= e($slideImages[0] ?? $mediaPath) ?>" alt="<?= e($item['title'] ?? $brandName) ?>" loading="lazy">
                                         <?php endif; ?>
                                     </div>
                                     <?php if (trim((string) ($item['title'] ?? '')) !== '' || trim((string) ($item['caption'] ?? '')) !== ''): ?>

@@ -221,6 +221,45 @@ function upload_image(array $file): ?string
     return 'uploads/' . $filename;
 }
 
+function has_uploaded_files(array $file): bool
+{
+    $errors = $file['error'] ?? null;
+    if (is_array($errors)) {
+        foreach ($errors as $error) if ((int) $error !== UPLOAD_ERR_NO_FILE) return true;
+        return false;
+    }
+    return $errors !== null && (int) $errors !== UPLOAD_ERR_NO_FILE;
+}
+
+function upload_image_slides(array $files): array
+{
+    if (!isset($files['name'], $files['error']) || !is_array($files['name']) || !is_array($files['error'])) return [];
+    $selectedIndexes = [];
+    foreach ($files['error'] as $index => $error) {
+        if ((int) $error !== UPLOAD_ERR_NO_FILE) $selectedIndexes[] = $index;
+    }
+    if (count($selectedIndexes) > 10) throw new RuntimeException('هر پست اسلایدی حداکثر ۱۰ تصویر دارد.');
+
+    $uploaded = [];
+    try {
+        foreach ($selectedIndexes as $index) {
+            $singleFile = [];
+            foreach (['name', 'type', 'tmp_name', 'error', 'size'] as $key) {
+                $singleFile[$key] = $files[$key][$index] ?? ($key === 'error' ? UPLOAD_ERR_NO_FILE : '');
+            }
+            $path = upload_brand_media($singleFile, 'image');
+            if ($path !== null) $uploaded[] = $path;
+        }
+    } catch (Throwable $exception) {
+        foreach ($uploaded as $path) {
+            $diskPath = dirname(__DIR__) . '/' . $path;
+            if (is_file($diskPath)) @unlink($diskPath);
+        }
+        throw $exception;
+    }
+    return $uploaded;
+}
+
 function upload_brand_media(array $file, string $mediaType): ?string
 {
     if (!isset($file['error']) || (int) $file['error'] === UPLOAD_ERR_NO_FILE) return null;

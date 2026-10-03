@@ -89,8 +89,8 @@ function admin_entities(PDO $pdo): array
                 'title' => ['label' => 'عنوان محتوا', 'type' => 'text', 'required' => true],
                 'caption' => ['label' => 'توضیح کوتاه', 'type' => 'textarea'],
                 'media_type' => ['label' => 'نوع محتوا', 'type' => 'select', 'options' => ['image' => 'تصویر', 'video' => 'ویدیو']],
-                'aspect_ratio' => ['label' => 'نسبت تصویر', 'type' => 'select', 'options' => ['16:9' => 'افقی · 16:9', '9:16' => 'عمودی · 9:16', '1:1' => 'مربع · 1:1']],
-                'media_path' => ['label' => 'فایل تصویر یا ویدیو', 'type' => 'media', 'required' => true, 'hint' => 'تصویر تا ۴ مگابایت؛ MP4/WEBM تا ۱۰۰ مگابایت.'],
+                'aspect_ratio' => ['label' => 'نسبت کاور', 'type' => 'select', 'options' => ['16:9' => 'افقی · 16:9', '9:16' => 'عمودی · 9:16', '1:1' => 'مربع · 1:1', '4:5' => 'پست عمودی · 4:5']],
+                'media_path' => ['label' => 'کاور یا ویدیوی محتوا', 'type' => 'media', 'required' => true, 'hint' => 'تصویر تا ۴ مگابایت؛ MP4/WEBM تا ۱۰۰ مگابایت. برای پست اسلایدی، چند تصویر (حداکثر ۱۰ عدد) در ورودی پایین انتخاب کنید.'],
                 'poster_path' => ['label' => 'پوستر ویدیو (اختیاری)', 'type' => 'image'],
             ],
         ],
@@ -160,18 +160,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $id = max(0, (int) ($_POST['id'] ?? 0));
             $values = [];
             $validationErrors = [];
+            $uploadedSlides = [];
+            $uploadedMedia = null;
+            $slideUploadConflict = false;
+            if ($entity === 'brand_media' && has_uploaded_files($_FILES['slides_upload'] ?? [])) {
+                $mediaTypeInput = (string) ($_POST['media_type'] ?? 'image');
+                $requestedMediaType = in_array($mediaTypeInput, ['image', 'video'], true) ? $mediaTypeInput : 'image';
+                if ($requestedMediaType !== 'image') {
+                    $validationErrors[] = 'اسلایدهای این پست باید تصویر باشند؛ برای ویدیو، فایل تکی را انتخاب کنید.';
+                    $slideUploadConflict = true;
+                }
+                if (has_uploaded_files($_FILES['media_path_upload'] ?? [])) {
+                    $validationErrors[] = 'برای هر پست، یا یک فایل ویدیو انتخاب کنید یا مجموعهٔ تصاویر اسلایدی را؛ هر دو را هم‌زمان بارگذاری نکنید.';
+                    $slideUploadConflict = true;
+                }
+                if (!$slideUploadConflict) $uploadedSlides = upload_image_slides($_FILES['slides_upload']);
+            }
             foreach ($meta['fields'] as $column => $field) {
                 if ($field['type'] === 'media') {
                     $value = trim((string) ($_POST['current_' . $column] ?? ''));
                     if (!empty($_POST['remove_' . $column])) $value = '';
-                    $mediaType = in_array((string) ($_POST['media_type'] ?? 'image'), ['image', 'video'], true) ? (string) $_POST['media_type'] : 'image';
-                    $uploaded = upload_brand_media($_FILES[$column . '_upload'] ?? [], $mediaType);
+                    $mediaTypeInput = (string) ($_POST['media_type'] ?? 'image');
+                    $mediaType = in_array($mediaTypeInput, ['image', 'video'], true) ? $mediaTypeInput : 'image';
+                    $uploaded = $slideUploadConflict ? null : upload_brand_media($_FILES[$column . '_upload'] ?? [], $mediaType);
+                    $uploadedMedia = $uploaded;
                     if ($uploaded !== null) $value = $uploaded;
+                    if ($uploadedSlides !== []) $value = $uploadedSlides[0];
                     $oldType = (string) ($_POST['current_media_type'] ?? '');
-                    if ($value !== '' && $oldType !== '' && $oldType !== $mediaType && $uploaded === null) {
+                    if ($value !== '' && $oldType !== '' && $oldType !== $mediaType && $uploaded === null && $uploadedSlides === []) {
                         $validationErrors[] = 'برای تغییر نوع رسانه، فایل تازهٔ همان نوع را بارگذاری کنید.';
                     }
-                    if (!empty($field['required']) && $value === '') $validationErrors[] = 'فایل تصویر یا ویدیوی آرشیو الزامی است.';
+                    if (!empty($field['required']) && $value === '' && $uploadedSlides === []) $validationErrors[] = 'فایل تصویر یا ویدیوی آرشیو الزامی است.';
                     $values[$column] = safe_media_src($value, '');
                     continue;
                 }
@@ -215,6 +234,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $validationErrors[] = 'پیوند انگلیسی را وارد کنید.';
             }
             if ($validationErrors !== []) {
+                foreach ($uploadedSlides as $path) {
+                    $diskPath = dirname(__DIR__) . '/' . $path;
+                    if (is_file($diskPath)) @unlink($diskPath);
+                }
                 set_flash('error', implode(' ', array_unique($validationErrors)));
                 redirect('index.php?page=' . rawurlencode($entity) . '&action=' . ($id > 0 ? 'edit&id=' . $id : 'new'));
             }
@@ -225,19 +248,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (isset($values['published_at']) && $values['published_at'] === '') $values['published_at'] = null;
 
             $columns = array_keys($values);
-            if ($id > 0) {
-                $sets = implode(', ', array_map(static fn($column) => '`' . $column . '` = :' . $column, $columns));
-                $values['id'] = $id;
-                $statement = $pdo->prepare('UPDATE `' . $meta['table'] . '` SET ' . $sets . ' WHERE id = :id');
-                $statement->execute($values);
-                set_flash('success', 'اطلاعات ' . $meta['singular'] . ' ویرایش شد.');
-            } else {
-                $columnSql = implode(', ', array_map(static fn($column) => '`' . $column . '`', $columns));
-                $parameterSql = implode(', ', array_map(static fn($column) => ':' . $column, $columns));
-                $statement = $pdo->prepare('INSERT INTO `' . $meta['table'] . '` (' . $columnSql . ') VALUES (' . $parameterSql . ')');
-                $statement->execute($values);
-                set_flash('success', $meta['singular'] . ' تازه اضافه شد.');
+            $ownsSlideTransaction = $entity === 'brand_media' && ($uploadedSlides !== [] || $uploadedMedia !== null) && !$pdo->inTransaction();
+            if ($ownsSlideTransaction) $pdo->beginTransaction();
+            try {
+                if ($id > 0) {
+                    $sets = implode(', ', array_map(static fn($column) => '`' . $column . '` = :' . $column, $columns));
+                    $values['id'] = $id;
+                    $statement = $pdo->prepare('UPDATE `' . $meta['table'] . '` SET ' . $sets . ' WHERE id = :id');
+                    $statement->execute($values);
+                    $savedId = $id;
+                } else {
+                    $columnSql = implode(', ', array_map(static fn($column) => '`' . $column . '`', $columns));
+                    $parameterSql = implode(', ', array_map(static fn($column) => ':' . $column, $columns));
+                    $statement = $pdo->prepare('INSERT INTO `' . $meta['table'] . '` (' . $columnSql . ') VALUES (' . $parameterSql . ')');
+                    $statement->execute($values);
+                    $savedId = (int) $pdo->lastInsertId();
+                }
+
+                if ($entity === 'brand_media' && ($uploadedSlides !== [] || $uploadedMedia !== null)) {
+                    $deleteSlides = $pdo->prepare('DELETE FROM brand_media_slides WHERE brand_media_id = :brand_media_id');
+                    $deleteSlides->execute(['brand_media_id' => $savedId]);
+                    if ($uploadedSlides !== []) {
+                        $insertSlide = $pdo->prepare('INSERT INTO brand_media_slides (brand_media_id, image_path, sort_order) VALUES (:brand_media_id, :image_path, :sort_order)');
+                        foreach ($uploadedSlides as $index => $slidePath) {
+                            $insertSlide->execute(['brand_media_id' => $savedId, 'image_path' => $slidePath, 'sort_order' => $index]);
+                        }
+                    }
+                }
+                if ($ownsSlideTransaction) $pdo->commit();
+            } catch (Throwable $exception) {
+                if ($ownsSlideTransaction && $pdo->inTransaction()) $pdo->rollBack();
+                foreach ($uploadedSlides as $path) {
+                    $diskPath = dirname(__DIR__) . '/' . $path;
+                    if (is_file($diskPath)) @unlink($diskPath);
+                }
+                throw $exception;
             }
+            set_flash('success', $uploadedSlides !== [] ? 'محتوای آرشیو و اسلایدهای آن ذخیره شد.' : ($id > 0 ? 'اطلاعات ' . $meta['singular'] . ' ویرایش شد.' : $meta['singular'] . ' تازه اضافه شد.'));
             redirect('index.php?page=' . rawurlencode($entity));
         }
 
@@ -319,6 +366,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirect('index.php?page=account');
         }
     } catch (Throwable $exception) {
+        if (isset($uploadedSlides) && is_array($uploadedSlides)) {
+            foreach ($uploadedSlides as $path) {
+                $diskPath = dirname(__DIR__) . '/' . $path;
+                if (is_file($diskPath)) @unlink($diskPath);
+            }
+        }
         $message = ($exception instanceof RuntimeException && !($exception instanceof PDOException)) ? $exception->getMessage() : 'عملیات انجام نشد. اطلاعات را بررسی کنید و دوباره تلاش کنید.';
         set_flash('error', $message);
         redirect('index.php?page=' . rawurlencode($returnPage));
@@ -358,6 +411,7 @@ $entityMeta = $entities[$page] ?? null;
 $editId = max(0, (int) ($_GET['id'] ?? 0));
 $actionMode = (string) ($_GET['action'] ?? '');
 $editItem = null;
+$editSlides = [];
 $listItems = [];
 $entityTableError = '';
 if ($entityMeta !== null) {
@@ -366,6 +420,11 @@ if ($entityMeta !== null) {
             $statement = $pdo->prepare('SELECT * FROM `' . $entityMeta['table'] . '` WHERE id = :id LIMIT 1');
             $statement->execute(['id' => $editId]);
             $editItem = $statement->fetch() ?: null;
+            if ($page === 'brand_media' && $editItem) {
+                $slideStatement = $pdo->prepare('SELECT image_path FROM brand_media_slides WHERE brand_media_id = :brand_media_id ORDER BY sort_order ASC, id ASC');
+                $slideStatement->execute(['brand_media_id' => $editId]);
+                $editSlides = $slideStatement->fetchAll();
+            }
         }
         $listItems = $pdo->query('SELECT * FROM `' . $entityMeta['table'] . '` ORDER BY sort_order ASC, id DESC')->fetchAll();
     } catch (Throwable $exception) {
@@ -381,7 +440,7 @@ if ($page === 'dashboard') {
     $recentInquiries = $pdo->query('SELECT id, name, phone, subject, status, created_at FROM inquiries ORDER BY created_at DESC LIMIT 5')->fetchAll();
 }
 
-function render_admin_field(string $column, array $field, array $item): void
+function render_admin_field(string $column, array $field, array $item, array $slides = []): void
 {
     $value = $item[$column] ?? ($field['type'] === 'date' ? date('Y-m-d') : '');
     $required = !empty($field['required']) ? ' required' : '';
@@ -406,7 +465,17 @@ function render_admin_field(string $column, array $field, array $item): void
                 echo '<span class="image-current"><img src="' . e($mediaUrl) . '" alt=""><span>تصویر فعلی</span></span>';
             }
         }
+        if ($slides !== []) {
+            echo '<div class="slide-preview-list" aria-label="اسلایدهای فعلی">';
+            foreach ($slides as $index => $slide) {
+                $slideUrl = safe_image_src((string) ($slide['image_path'] ?? ''), '');
+                if ($slideUrl === '') continue;
+                echo '<span class="image-current"><img src="../' . e($slideUrl) . '" alt=""><span>اسلاید ' . fa_num((string) ($index + 1)) . '</span></span>';
+            }
+            echo '</div>';
+        }
         echo '<input type="hidden" name="current_' . e($column) . '" value="' . e($value) . '"><input type="hidden" name="current_media_type" value="' . e($mediaType) . '"><input type="file" name="' . e($column) . '_upload" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm">';
+        if ($column === 'media_path') echo '<small class="field-hint">تصویرهای اسلایدی — به‌جای فایل تکی بالا (حداکثر ۱۰ تصویر)</small><input type="file" name="slides_upload[]" accept="image/jpeg,image/png,image/webp,image/gif" multiple aria-label="تصاویر اسلایدی">';
         if ($safeMedia !== '') echo '<label class="check-label"><input type="checkbox" name="remove_' . e($column) . '" value="1"> حذف فایل فعلی</label>';
     } elseif ($field['type'] === 'image') {
         if ((string) $value !== '') echo '<span class="image-current"><img src="../' . e(safe_image_src($value, '')) . '" alt=""><span>تصویر فعلی</span></span>';
@@ -504,7 +573,7 @@ function render_admin_field(string $column, array $field, array $item): void
                     <section class="admin-card item-form-card"><div class="admin-card-heading"><div><span class="admin-kicker"><?= $editItem ? 'ویرایش مورد' : 'مورد تازه' ?></span><h2><?= $editItem ? e($formItem[$entityMeta['name_field']] ?? $entityMeta['singular']) : 'افزودن ' . e($entityMeta['singular']) ?></h2></div><a class="admin-close" href="index.php?page=<?= e($page) ?>">بستن</a></div>
                         <form class="item-form" method="post" enctype="multipart/form-data">
                             <?= csrf_field() ?><input type="hidden" name="action" value="save_item"><input type="hidden" name="return_page" value="<?= e($page) ?>"><input type="hidden" name="entity" value="<?= e($page) ?>"><input type="hidden" name="id" value="<?= e($editItem['id'] ?? 0) ?>">
-                            <div class="item-fields-grid"><?php foreach ($entityMeta['fields'] as $column => $field) render_admin_field($column, $field, $formItem); ?></div>
+                            <div class="item-fields-grid"><?php foreach ($entityMeta['fields'] as $column => $field) render_admin_field($column, $field, $formItem, $column === 'media_path' ? $editSlides : []); ?></div>
                             <div class="item-options"><label class="admin-field"><span>ترتیب نمایش</span><input type="number" name="sort_order" min="-9999" max="9999" value="<?= e($formItem['sort_order'] ?? 0) ?>"></label><label class="check-label publish-check"><input type="checkbox" name="is_published" value="1"<?= !empty($formItem['is_published']) ? ' checked' : '' ?>> انتشار صفحهٔ مستقل</label><?php if ($page === 'brands'): ?><label class="check-label publish-check"><input type="checkbox" name="is_featured" value="1"<?= !empty($formItem['is_featured']) ? ' checked' : '' ?>> نمایش در صفحهٔ خانه</label><?php endif; ?></div>
                             <div class="form-actions"><button class="admin-button admin-button-primary" type="submit">ذخیرهٔ <?= e($entityMeta['singular']) ?> <?= icon_svg('check') ?></button><a class="admin-button admin-button-ghost" href="index.php?page=<?= e($page) ?>">انصراف</a></div>
                         </form>

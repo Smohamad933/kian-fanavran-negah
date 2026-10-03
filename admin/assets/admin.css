@@ -8,3 +8,4 @@
 .admin-toggle-setting{display:flex;align-items:center;gap:9px;min-height:39px;color:#68746b;font-size:10px}
 .admin-toggle-setting input[type=checkbox]{width:16px;height:16px;margin:0;accent-color:var(--admin-teal)}
 .admin-toggle-setting small{color:#92998f;font-size:8px}
+.slide-preview-list{display:flex;flex-wrap:wrap;gap:8px;grid-column:1/-1;padding:8px 0}.slide-preview-list .image-current{align-items:center;min-width:82px;padding:5px;border:1px solid var(--admin-line);background:#fffefa}.slide-preview-list .image-current img{width:76px;height:84px;object-fit:cover}
