@@ -5,3 +5,6 @@
 .image-current video{width:100px;height:64px;object-fit:contain;background:#18231f;border:1px solid var(--admin-line)}
 .item-fields-grid .admin-field:has(select[name="brand_id"]){grid-column:1/-1}
 .admin-sidebar{overflow-y:auto}
+.admin-toggle-setting{display:flex;align-items:center;gap:9px;min-height:39px;color:#68746b;font-size:10px}
+.admin-toggle-setting input[type=checkbox]{width:16px;height:16px;margin:0;accent-color:var(--admin-teal)}
+.admin-toggle-setting small{color:#92998f;font-size:8px}

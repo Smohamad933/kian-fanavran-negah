@@ -128,6 +128,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $value = trim((string) $_POST['settings'][$key]);
                 if ($key === 'custom_font_path') {
                     $value = safe_font_src($value);
+                } elseif (in_array($key, ['footer_show_admin_login', 'footer_show_source_link', 'footer_show_credit'], true)) {
+                    $value = $value === '1' ? '1' : '0';
                 } elseif (str_starts_with($key, 'theme_')) {
                     $value = safe_color($value, (string) $fallback);
                 } elseif (str_ends_with($key, '_url') || str_starts_with($key, 'social_')) {
@@ -478,6 +480,7 @@ function render_admin_field(string $column, array $field, array $item): void
                                         <span><?= e($field['label']) ?></span>
                                         <?php if ($field['type'] === 'textarea'): ?><textarea name="settings[<?= e($field['key']) ?>]" rows="3"><?= e($value) ?></textarea>
                                         <?php elseif ($field['type'] === 'color'): ?><span class="color-control"><input type="color" name="settings[<?= e($field['key']) ?>]" value="<?= e(safe_color($value, '#155C5A')) ?>"><input type="text" value="<?= e(safe_color($value, '#155C5A')) ?>" readonly dir="ltr"></span>
+                                        <?php elseif ($field['type'] === 'toggle'): ?><span class="admin-toggle-setting"><input type="hidden" name="settings[<?= e($field['key']) ?>]" value="0"><input type="checkbox" name="settings[<?= e($field['key']) ?>]" value="1"<?= (string) $value === '1' ? ' checked' : '' ?>><small>پس از ذخیره اعمال می‌شود</small></span>
                                         <?php elseif ($field['type'] === 'font'): ?>
                                             <?php $fontValue = safe_font_src($value); ?>
                                             <input type="hidden" name="settings[<?= e($field['key']) ?>]" value="<?= e($fontValue) ?>">

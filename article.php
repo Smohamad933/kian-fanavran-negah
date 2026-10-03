@@ -23,6 +23,7 @@ if ($article === null) {
 }
 if ($article === null) http_response_code(404);
 $settings = $data['settings'];
+$footerCreditUrl = safe_href($settings['footer_credit_url'] ?? '', '');
 $articleImage = safe_image_src($article['image'] ?? '', '');
 $bodyText = trim((string) ($article['body'] ?? ''));
 $paragraphs = preg_split('/\R\s*\R/u', $bodyText) ?: [];
@@ -62,6 +63,6 @@ $customFontFormat = match (strtolower(pathinfo($customFontPath, PATHINFO_EXTENSI
             <section class="article-hero"><div class="article-container"><div class="eyebrow"><span class="eyebrow-mark"></span><?= e($settings['brand_name']) ?></div><h1>این یادداشت پیدا نشد.</h1><p>ممکن است یادداشت حذف یا از حالت انتشار خارج شده باشد.</p><a class="button button-primary" href="index.php#journal" style="margin-top:24px"><span>بازگشت به صفحهٔ اصلی</span><?= icon_svg('arrow-left') ?></a></div></section>
         <?php endif; ?>
     </main>
-    <footer class="site-footer"><div class="container footer-bottom"><span>© <?= fa_num(date('Y')) ?> <?= e($settings['brand_name']) ?></span><span class="footer-credit">نگاه مدیا، از خانوادهٔ <b>کیان فناوران نگاه</b></span></div></footer>
+    <footer class="site-footer"><div class="container footer-bottom"><span>© <?= fa_num(date('Y')) ?> <?= e($settings['brand_name']) ?></span><?php if ((string) ($settings['footer_show_credit'] ?? '1') === '1'): ?><span class="footer-credit">نگاه مدیا، از خانوادهٔ <?php if ($footerCreditUrl !== ''): ?><a href="<?= e($footerCreditUrl) ?>"<?= (str_starts_with($footerCreditUrl, 'http://') || str_starts_with($footerCreditUrl, 'https://')) ? ' target="_blank" rel="noopener noreferrer"' : '' ?>><b>کیان فناوران نگاه</b></a><?php else: ?><b>کیان فناوران نگاه</b><?php endif; ?></span><?php endif; ?></div></footer>
 </body>
 </html>

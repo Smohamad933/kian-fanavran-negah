@@ -4,6 +4,7 @@ if (!defined('SITE_RENDER')) {
     exit;
 }
 $customFontPath = safe_font_src($settings['custom_font_path'] ?? '');
+$footerCreditUrl = safe_href($settings['footer_credit_url'] ?? '', '');
 $customFontFormat = match (strtolower(pathinfo($customFontPath, PATHINFO_EXTENSION))) {
     'woff2' => 'woff2', 'woff' => 'woff', 'ttf' => 'truetype', 'otf' => 'opentype', default => ''
 };
@@ -336,10 +337,10 @@ $customFontFormat = match (strtolower(pathinfo($customFontPath, PATHINFO_EXTENSI
                 </div>
             </div>
             <div class="footer-links-column"><h3><?= e($settings['footer_quick_links_title']) ?></h3><a href="#services"><?= e($settings['nav_services']) ?></a><a href="#portfolio"><?= e($settings['nav_portfolio']) ?></a><a href="#partners"><?= e($settings['nav_partners']) ?></a><a href="#about"><?= e($settings['nav_about']) ?></a><a href="#journal"><?= e($settings['nav_journal']) ?></a></div>
-            <div class="footer-links-column"><h3><?= e($settings['footer_brand_links_title']) ?></h3><a href="#contact">درخواست مشاوره</a><a href="#contact">همکاری با ما</a><a href="#contact">پرسش‌های شما</a><a href="admin/login.php">ورود مدیر سایت</a><a class="source-download-link" href="<?= e(safe_href($settings['source_download_url'], '#')) ?>" target="_blank" rel="noopener noreferrer">دانلود سورس سایت <?= icon_svg('arrow') ?></a></div>
+            <div class="footer-links-column"><h3><?= e($settings['footer_brand_links_title']) ?></h3><a href="#contact">درخواست مشاوره</a><a href="#contact">همکاری با ما</a><a href="#contact">پرسش‌های شما</a><?php if ((string) ($settings['footer_show_admin_login'] ?? '0') === '1'): ?><a href="admin/login.php">ورود مدیر سایت</a><?php endif; ?><?php if ((string) ($settings['footer_show_source_link'] ?? '1') === '1' && trim((string) ($settings['source_download_url'] ?? '')) !== ''): ?><a class="source-download-link" href="<?= e(safe_href($settings['source_download_url'], '#')) ?>" target="_blank" rel="noopener noreferrer">دانلود سورس سایت <?= icon_svg('arrow') ?></a><?php endif; ?></div>
             <div class="footer-contact-column"><h3><?= e($settings['footer_contact_title']) ?></h3><a href="tel:<?= e(preg_replace('/[^0-9+]/', '', (string) $settings['contact_phone'])) ?>"><?= e($settings['contact_phone']) ?></a><a href="mailto:<?= e($settings['contact_email']) ?>"><?= e($settings['contact_email']) ?></a><span><?= e($settings['contact_address']) ?></span><a class="footer-top-link" href="#top">بازگشت به بالا <?= icon_svg('arrow') ?></a></div>
         </div>
-        <div class="container footer-bottom"><span>© <?= fa_num(date('Y')) ?> <?= e($settings['brand_name']) ?>. همهٔ حقوق محفوظ است.</span><span class="footer-credit">نگاه مدیا، از خانوادهٔ <b>کیان فناوران نگاه</b></span></div>
+        <div class="container footer-bottom"><span>© <?= fa_num(date('Y')) ?> <?= e($settings['brand_name']) ?>. همهٔ حقوق محفوظ است.</span><?php if ((string) ($settings['footer_show_credit'] ?? '1') === '1'): ?><span class="footer-credit">نگاه مدیا، از خانوادهٔ <?php if ($footerCreditUrl !== ''): ?><a href="<?= e($footerCreditUrl) ?>"<?= (str_starts_with($footerCreditUrl, 'http://') || str_starts_with($footerCreditUrl, 'https://')) ? ' target="_blank" rel="noopener noreferrer"' : '' ?>><b>کیان فناوران نگاه</b></a><?php else: ?><b>کیان فناوران نگاه</b><?php endif; ?></span><?php endif; ?></div>
     </footer>
 </body>
 </html>
