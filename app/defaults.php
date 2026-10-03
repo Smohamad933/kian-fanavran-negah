@@ -153,6 +153,7 @@ function default_brands(): array
             'testimonial_quote' => '',
             'testimonial_author' => '',
             'testimonial_role' => '',
+            'is_featured' => 0,
             'sort_order' => $index + 1,
             'is_published' => 1,
         ], $record);

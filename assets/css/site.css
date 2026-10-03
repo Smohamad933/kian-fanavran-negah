@@ -642,3 +642,32 @@ body.has-js [data-reveal].is-visible { opacity: 1; transform: none; }
     .partner-symbol { flex-basis: 36px; width: 36px; height: 36px; }
     .partner-name { padding-inline-end: 7px; font-size: 9px; }
 }
+
+/* Selected brand wordmark cards — no logos or monogram placeholders */
+.partners-section { background: #f3f1eb; }
+.partners-section::before { display: none; }
+.partners-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 23px 24px; border: 0; }
+.partner-card { min-height: 178px; aspect-ratio: 1.46; position: relative; display: block; padding: 0; overflow: hidden; border: 1px solid #d9d7d1; border-top: 3px solid #292724; border-bottom: 1px solid #d9d7d1; background: #fffdfa; box-shadow: none; transform: none; transition: border-color .2s ease, color .2s ease, box-shadow .2s ease; }
+.partner-card:hover, .partner-card:focus-visible { z-index: 1; transform: translateY(-2px); border-top-color: #ad7900; border-bottom-color: #ad7900; background: #fffdfa; box-shadow: 0 10px 24px rgba(67, 54, 23, .09); outline: none; }
+.partner-number { position: absolute; top: 20px; right: 20px; color: #a87500; font-family: Georgia, serif; font-size: 10px; font-weight: 500; letter-spacing: .7px; }
+.partner-name { position: absolute; inset: 50% 16px auto; display: flex; justify-content: center; align-items: center; min-height: 32px; padding: 0; color: #36332f; font-size: 14px; font-weight: 650; line-height: 1.9; text-align: center; transform: translateY(-50%); transition: color .2s ease; }
+.partner-card:hover .partner-name, .partner-card:focus-visible .partner-name { color: #a87500; }
+.partner-visit { position: absolute; right: 12px; bottom: 17px; left: 12px; display: flex; align-items: center; justify-content: center; gap: 5px; color: #89857d; font-size: 9px; line-height: 1.5; transition: color .2s ease; }
+.partner-visit svg { width: 11px; height: 11px; }
+.partner-card:hover .partner-visit, .partner-card:focus-visible .partner-visit { color: #a87500; }
+.partners-empty { min-height: 105px; display: grid; place-items: center; padding: 25px; border: 1px solid rgba(41,39,36,.12); background: #fffdfa; color: #7c776e; text-align: center; font-size: 12px; }
+@media (max-width: 1050px) {
+    .partners-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+}
+@media (max-width: 760px) {
+    .partners-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px; }
+    .partner-card { min-height: 145px; aspect-ratio: 1.38; }
+    .partner-number { top: 15px; right: 13px; font-size: 9px; }
+    .partner-name { inset-inline: 9px; font-size: 11px; }
+    .partner-visit { bottom: 13px; font-size: 8px; }
+}
+@media (max-width: 380px) {
+    .partners-grid { gap: 10px; }
+    .partner-card { min-height: 132px; }
+    .partner-name { font-size: 10px; }
+}

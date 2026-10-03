@@ -93,12 +93,20 @@ CREATE TABLE IF NOT EXISTS brands (
     testimonial_role VARCHAR(180) NOT NULL DEFAULT '',
     sort_order INT NOT NULL DEFAULT 0,
     is_published TINYINT(1) NOT NULL DEFAULT 1,
+    is_featured TINYINT(1) NOT NULL DEFAULT 0,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
     UNIQUE KEY uq_brand_slug (slug),
     KEY idx_brands_public_order (is_published, sort_order)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Add the homepage selection field idempotently for existing installations.
+SET @brand_featured_column_exists = (SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'brands' AND column_name = 'is_featured');
+SET @brand_featured_column_sql = IF(@brand_featured_column_exists = 0, 'ALTER TABLE brands ADD COLUMN is_featured TINYINT(1) NOT NULL DEFAULT 0 AFTER is_published', 'SELECT 1 INTO @brand_featured_column_noop');
+PREPARE brand_featured_column_stmt FROM @brand_featured_column_sql;
+EXECUTE brand_featured_column_stmt;
+DEALLOCATE PREPARE brand_featured_column_stmt;
 
 CREATE TABLE IF NOT EXISTS brand_media (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -260,36 +268,36 @@ INSERT IGNORE INTO articles (title, slug, category, excerpt, body, image, publis
 ('کمپین خوب از پرسیدن سؤال درست شروع می‌شود', 'better-campaigns', 'استراتژی', 'پیش از انتخاب رسانه و فرمت، باید بدانیم قرار است چه چیزی در مخاطب تغییر کند.', 'پیش از انتخاب رسانه و فرمت، باید بدانیم قرار است چه چیزی در مخاطب تغییر کند. کمپین زمانی جهت پیدا می‌کند که یک مسئله روشن، یک مخاطب مشخص و یک هدف قابل سنجش داشته باشد.\n\nبا پرسیدن سؤال درست، ایده از حد یک تصویر جذاب فراتر می‌رود و به تجربه‌ای تبدیل می‌شود که مخاطب آن را می‌فهمد، به یاد می‌آورد و درباره‌اش حرف می‌زند.', '', CURRENT_DATE, 1);
 
 -- برندهای همکار اولیه؛ دیدگاه واقعی هر برند را از پنل ثبت کنید.
-INSERT IGNORE INTO brands (name, slug, logo, short_description, long_description, testimonial_quote, sort_order, is_published) VALUES
-('رنس تکس', 'rans-tex', '', '', '', '', 1, 1),
-('گالری طلاوجواهر محمود', 'mahmoud-jewelry', '', '', '', '', 2, 1),
-('رویان شبکه', 'royan-network', '', '', '', '', 3, 1),
-('الدراگ استور', 'aldrag-store', '', '', '', '', 4, 1),
-('دانشگاه شهید چمران اهواز', 'shahid-chamran-university', '', '', '', '', 5, 1),
-('وزارت علوم، تحقیقات و فناوری', 'ministry-science-research', '', '', '', '', 6, 1),
-('چمران پلاس', 'chamran-plus', '', '', '', '', 7, 1),
-('صداوسیما مرکز خوزستان', 'irib-khuzestan', '', '', '', '', 8, 1),
-('انجمن خیریه ۱۴ معصوم', 'charity-14-maasoom', '', '', '', '', 9, 1),
-('گالری نقره سیده راد', 'seyedarad-silver', '', '', '', '', 10, 1),
-('گالری جواهرات هم‌نفس', 'hamnafas-jewelry', '', '', '', '', 11, 1),
-('سازه‌های آبی شوشتر', 'shushtar-water-structures', '', '', '', '', 12, 1),
-('مجموعه نظریان', 'nazarian-group', '', '', '', '', 13, 1),
-('ابزارآلات قشقایی', 'ghashghai-tools', '', '', '', '', 14, 1),
-('شهرداری اهواز', 'ahvaz-municipality', '', '', '', '', 15, 1),
-('استانداری هرمزگان', 'hormozgan-governorate', '', '', '', '', 16, 1),
-('استانداری خوزستان', 'khuzestan-governorate', '', '', '', '', 17, 1),
-('کنسرت علیرضا قربانی', 'alireza-ghorbani-concert', '', '', '', '', 18, 1),
-('ارکستر سازهای ایرانی به یاد خالقی', 'khalaghi-iranian-orchestra', '', '', '', '', 19, 1),
-('جایزه ملی آهنگسازی استاد روح‌الله خالقی', 'khalaghi-composition-award', '', '', '', '', 20, 1),
-('خانه موسیقی تهران', 'tehran-music-house', '', '', '', '', 21, 1),
-('مشاوران افق دانش ثریا', 'ofogh-danesh-soraya', '', '', '', '', 22, 1),
-('مرکز رسانه استان خوزستان', 'khuzestan-media-center', '', '', '', '', 23, 1),
-('سازمان تبلیغات استان خوزستان', 'khuzestan-advertising-organization', '', '', '', '', 24, 1),
-('آژانس تبلیغاتی لامیلا', 'lamila-ad-agency', '', '', '', '', 25, 1),
-('مجموعه سرودهای استان خوزستان', 'khuzestan-choir-group', '', '', '', '', 26, 1),
-('مؤسسه برتینا', 'bertina-institute', '', '', '', '', 27, 1),
-('گروه موسیقی نی‌نوا', 'ney-nava-music-group', '', '', '', '', 28, 1),
-('دفتر امام جمعه اهواز', 'ahvaz-friday-office', '', '', '', '', 29, 1),
-('استودیو هور', 'studio-hoor', '', '', '', '', 30, 1),
-('کلینیک مشاوره کودک و نوجوان بهشت زندگی', 'behesht-zendegi-clinic', '', '', '', '', 31, 1),
-('طلا و جواهرات محمد سیاوشی', 'mohammad-siavashi-jewelry', '', '', '', '', 32, 1);
+INSERT IGNORE INTO brands (name, slug, logo, short_description, long_description, testimonial_quote, sort_order, is_published, is_featured) VALUES
+('رنس تکس', 'rans-tex', '', '', '', '', 1, 1, 0),
+('گالری طلاوجواهر محمود', 'mahmoud-jewelry', '', '', '', '', 2, 1, 0),
+('رویان شبکه', 'royan-network', '', '', '', '', 3, 1, 0),
+('الدراگ استور', 'aldrag-store', '', '', '', '', 4, 1, 0),
+('دانشگاه شهید چمران اهواز', 'shahid-chamran-university', '', '', '', '', 5, 1, 0),
+('وزارت علوم، تحقیقات و فناوری', 'ministry-science-research', '', '', '', '', 6, 1, 0),
+('چمران پلاس', 'chamran-plus', '', '', '', '', 7, 1, 0),
+('صداوسیما مرکز خوزستان', 'irib-khuzestan', '', '', '', '', 8, 1, 0),
+('انجمن خیریه ۱۴ معصوم', 'charity-14-maasoom', '', '', '', '', 9, 1, 0),
+('گالری نقره سیده راد', 'seyedarad-silver', '', '', '', '', 10, 1, 0),
+('گالری جواهرات هم‌نفس', 'hamnafas-jewelry', '', '', '', '', 11, 1, 0),
+('سازه‌های آبی شوشتر', 'shushtar-water-structures', '', '', '', '', 12, 1, 0),
+('مجموعه نظریان', 'nazarian-group', '', '', '', '', 13, 1, 0),
+('ابزارآلات قشقایی', 'ghashghai-tools', '', '', '', '', 14, 1, 0),
+('شهرداری اهواز', 'ahvaz-municipality', '', '', '', '', 15, 1, 0),
+('استانداری هرمزگان', 'hormozgan-governorate', '', '', '', '', 16, 1, 0),
+('استانداری خوزستان', 'khuzestan-governorate', '', '', '', '', 17, 1, 0),
+('کنسرت علیرضا قربانی', 'alireza-ghorbani-concert', '', '', '', '', 18, 1, 0),
+('ارکستر سازهای ایرانی به یاد خالقی', 'khalaghi-iranian-orchestra', '', '', '', '', 19, 1, 0),
+('جایزه ملی آهنگسازی استاد روح‌الله خالقی', 'khalaghi-composition-award', '', '', '', '', 20, 1, 0),
+('خانه موسیقی تهران', 'tehran-music-house', '', '', '', '', 21, 1, 0),
+('مشاوران افق دانش ثریا', 'ofogh-danesh-soraya', '', '', '', '', 22, 1, 0),
+('مرکز رسانه استان خوزستان', 'khuzestan-media-center', '', '', '', '', 23, 1, 0),
+('سازمان تبلیغات استان خوزستان', 'khuzestan-advertising-organization', '', '', '', '', 24, 1, 0),
+('آژانس تبلیغاتی لامیلا', 'lamila-ad-agency', '', '', '', '', 25, 1, 0),
+('مجموعه سرودهای استان خوزستان', 'khuzestan-choir-group', '', '', '', '', 26, 1, 0),
+('مؤسسه برتینا', 'bertina-institute', '', '', '', '', 27, 1, 0),
+('گروه موسیقی نی‌نوا', 'ney-nava-music-group', '', '', '', '', 28, 1, 0),
+('دفتر امام جمعه اهواز', 'ahvaz-friday-office', '', '', '', '', 29, 1, 0),
+('استودیو هور', 'studio-hoor', '', '', '', '', 30, 1, 0),
+('کلینیک مشاوره کودک و نوجوان بهشت زندگی', 'behesht-zendegi-clinic', '', '', '', '', 31, 1, 0),
+('طلا و جواهرات محمد سیاوشی', 'mohammad-siavashi-jewelry', '', '', '', '', 32, 1, 0);

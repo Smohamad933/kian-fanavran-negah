@@ -176,19 +176,21 @@ $customFontFormat = match (strtolower(pathinfo($customFontPath, PATHINFO_EXTENSI
                         <div class="eyebrow"><span class="eyebrow-mark"></span><?= e($settings['partners_eyebrow']) ?></div>
                         <h2><?= e($settings['partners_title']) ?></h2>
                     </div>
-                    <div class="heading-side partners-heading-side"><p><?= e($settings['partners_description']) ?></p><span class="partners-count"><b><?= fa_num((string) count($brands)) ?></b><small>برند همکار</small></span></div>
+                    <div class="heading-side partners-heading-side"><p><?= e($settings['partners_description']) ?></p><span class="partners-count"><b><?= fa_num((string) count($featuredBrands)) ?></b><small>برند منتخب</small></span></div>
                 </div>
-                <div class="partners-grid">
-                    <?php foreach ($brands as $index => $brand): ?>
-                        <?php $brandLogo = safe_image_src($brand['logo'] ?? '', ''); ?>
-                        <a class="partner-card" href="brand.php?slug=<?= e(rawurlencode((string) $brand['slug'])) ?>" data-reveal data-reveal-delay="<?= e((string) (($index % 6) * 45)) ?>">
-                            <span class="partner-symbol"><?php if ($brandLogo !== ''): ?><img src="<?= e($brandLogo) ?>" alt="" loading="lazy"><?php else: ?><span><?= e(first_char($brand['name'] ?? 'ب')) ?></span><?php endif; ?></span>
-                            <span class="partner-name"><?= e($brand['name']) ?></span>
-                            <span class="partner-arrow"><?= icon_svg('arrow') ?></span>
-                        </a>
-                    <?php endforeach; ?>
-                </div>
-                <div class="partners-footnote"><span class="footnote-star">✳</span><span>برای دیدن صفحهٔ هر برند، روی کارت آن کلیک کنید؛ آرشیو و بازخوردها در همان صفحه قرار می‌گیرند.</span></div>
+                <?php if ($featuredBrands !== []): ?>
+                    <div class="partners-grid">
+                        <?php foreach ($featuredBrands as $index => $brand): ?>
+                            <a class="partner-card" href="brand.php?slug=<?= e(rawurlencode((string) $brand['slug'])) ?>" aria-label="مشاهدهٔ صفحهٔ <?= e($brand['name']) ?>" data-reveal data-reveal-delay="<?= e((string) (($index % 4) * 55)) ?>">
+                                <span class="partner-number" dir="ltr">NO. <?= fa_num(str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT)) ?></span>
+                                <span class="partner-name"><?= e($brand['name']) ?></span>
+                                <span class="partner-visit"><?= icon_svg('arrow-left') ?><span>مشاهده صفحه</span></span>
+                            </a>
+                        <?php endforeach; ?>
+                    </div>
+                <?php else: ?>
+                    <div class="partners-empty"><strong>برندهای منتخب به‌زودی در این بخش نمایش داده می‌شوند.</strong></div>
+                <?php endif; ?>
             </div>
         </section>
 

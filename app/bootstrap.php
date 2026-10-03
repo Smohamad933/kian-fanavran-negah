@@ -295,6 +295,7 @@ function load_site_data(?PDO $pdo): array
     $testimonials = default_testimonials();
     $articles = default_articles();
     $brands = default_brands();
+    $featuredBrands = array_values(array_filter($brands, static fn(array $brand): bool => !empty($brand['is_featured'])));
 
     if ($pdo !== null) {
         try {
@@ -315,12 +316,13 @@ function load_site_data(?PDO $pdo): array
             $testimonials = array_slice($testimonials, 0, 6);
             $articles = $pdo->query('SELECT * FROM articles WHERE is_published = 1 ORDER BY published_at DESC, id DESC LIMIT 3')->fetchAll();
             $brands = $pdo->query('SELECT * FROM brands WHERE is_published = 1 ORDER BY sort_order ASC, id ASC')->fetchAll();
+            $featuredBrands = $pdo->query('SELECT * FROM brands WHERE is_published = 1 AND is_featured = 1 ORDER BY sort_order ASC, id ASC')->fetchAll();
         } catch (Throwable $exception) {
             // The public site remains usable while the database is being installed.
         }
     }
 
-    return compact('settings', 'services', 'projects', 'testimonials', 'articles', 'brands');
+    return compact('settings', 'services', 'projects', 'testimonials', 'articles', 'brands', 'featuredBrands');
 }
 
 function icon_svg(string $name, string $class = ''): string
