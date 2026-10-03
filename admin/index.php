@@ -14,8 +14,16 @@ try {
 if (!$currentAdmin) redirect('login.php');
 $_SESSION['admin_username'] = (string) $currentAdmin['username'];
 
-function admin_entities(): array
+function admin_entities(PDO $pdo): array
 {
+    $brandOptions = [];
+    try {
+        foreach ($pdo->query('SELECT id, name FROM brands ORDER BY sort_order ASC, name ASC')->fetchAll() as $brandOption) {
+            $brandOptions[(string) $brandOption['id']] = (string) $brandOption['name'];
+        }
+    } catch (Throwable $exception) {
+        // Older installations can still access existing admin sections until the updated schema is imported.
+    }
     return [
         'services' => [
             'table' => 'services', 'title' => 'خدمات', 'singular' => 'خدمت', 'name_field' => 'name',
@@ -61,6 +69,31 @@ function admin_entities(): array
                 'published_at' => ['label' => 'تاریخ انتشار', 'type' => 'date'],
             ],
         ],
+        'brands' => [
+            'table' => 'brands', 'title' => 'برندهای همکار', 'singular' => 'برند', 'name_field' => 'name',
+            'fields' => [
+                'name' => ['label' => 'نام برند', 'type' => 'text', 'required' => true],
+                'slug' => ['label' => 'پیوند انگلیسی', 'type' => 'slug', 'required' => true, 'hint' => 'برای برندهای اولیه از شناسهٔ موجود استفاده کنید.'],
+                'logo' => ['label' => 'لوگوی برند', 'type' => 'image', 'hint' => 'PNG با زمینهٔ شفاف یا WEBP، حداکثر ۴ مگابایت.'],
+                'short_description' => ['label' => 'معرفی کوتاه', 'type' => 'textarea'],
+                'long_description' => ['label' => 'متن صفحهٔ برند', 'type' => 'textarea'],
+                'testimonial_quote' => ['label' => 'نظر کارفرما (با تأیید ایشان)', 'type' => 'textarea', 'hint' => 'برای رعایت امانت، فقط نقل‌قول واقعی و مورد تأیید برند را منتشر کنید.'],
+                'testimonial_author' => ['label' => 'نام گویندهٔ نظر', 'type' => 'text'],
+                'testimonial_role' => ['label' => 'سمت یا عنوان گوینده', 'type' => 'text'],
+            ],
+        ],
+        'brand_media' => [
+            'table' => 'brand_media', 'title' => 'آرشیو رسانهٔ برندها', 'singular' => 'رسانه', 'name_field' => 'title',
+            'fields' => [
+                'brand_id' => ['label' => 'برند', 'type' => 'brand_select', 'required' => true, 'options' => $brandOptions],
+                'title' => ['label' => 'عنوان محتوا', 'type' => 'text', 'required' => true],
+                'caption' => ['label' => 'توضیح کوتاه', 'type' => 'textarea'],
+                'media_type' => ['label' => 'نوع محتوا', 'type' => 'select', 'options' => ['image' => 'تصویر', 'video' => 'ویدیو']],
+                'aspect_ratio' => ['label' => 'نسبت تصویر', 'type' => 'select', 'options' => ['16:9' => 'افقی · 16:9', '9:16' => 'عمودی · 9:16', '1:1' => 'مربع · 1:1']],
+                'media_path' => ['label' => 'فایل تصویر یا ویدیو', 'type' => 'media', 'required' => true, 'hint' => 'تصویر تا ۴ مگابایت؛ MP4/WEBM تا ۱۰۰ مگابایت.'],
+                'poster_path' => ['label' => 'پوستر ویدیو (اختیاری)', 'type' => 'image'],
+            ],
+        ],
     ];
 }
 
@@ -74,8 +107,8 @@ function limit_admin_text(string $value, int $limit = 10000): string
     return strlen($value) <= $limit * 4 ? $value : substr($value, 0, $limit * 4);
 }
 
-$entities = admin_entities();
-$validPages = ['dashboard', 'content', 'services', 'projects', 'testimonials', 'articles', 'inquiries', 'account'];
+$entities = admin_entities($pdo);
+$validPages = ['dashboard', 'content', 'services', 'projects', 'testimonials', 'articles', 'brands', 'brand_media', 'inquiries', 'account'];
 $page = (string) ($_GET['page'] ?? 'dashboard');
 if (!in_array($page, $validPages, true)) $page = 'dashboard';
 $errors = [];
@@ -93,7 +126,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             foreach ($defaults as $key => $fallback) {
                 if (!array_key_exists($key, $_POST['settings'] ?? [])) continue;
                 $value = trim((string) $_POST['settings'][$key]);
-                if (str_starts_with($key, 'theme_')) {
+                if ($key === 'custom_font_path') {
+                    $value = safe_font_src($value);
+                } elseif (str_starts_with($key, 'theme_')) {
                     $value = safe_color($value, (string) $fallback);
                 } elseif (str_ends_with($key, '_url') || str_starts_with($key, 'social_')) {
                     if ($value !== '') $value = safe_href($value, (string) $fallback);
@@ -105,6 +140,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $heroUpload = upload_image($_FILES['hero_upload'] ?? []);
             if ($heroUpload !== null) {
                 $upsert->execute(['setting_key' => 'hero_image', 'setting_value' => $heroUpload]);
+            }
+            $fontUpload = upload_custom_font($_FILES['font_upload'] ?? []);
+            if (!empty($_POST['remove_custom_font'])) {
+                $upsert->execute(['setting_key' => 'custom_font_path', 'setting_value' => '']);
+            } elseif ($fontUpload !== null) {
+                $upsert->execute(['setting_key' => 'custom_font_path', 'setting_value' => $fontUpload]);
             }
             set_flash('success', 'تغییرات محتوا با موفقیت ذخیره شد.');
             redirect('index.php?page=content');
@@ -118,6 +159,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $values = [];
             $validationErrors = [];
             foreach ($meta['fields'] as $column => $field) {
+                if ($field['type'] === 'media') {
+                    $value = trim((string) ($_POST['current_' . $column] ?? ''));
+                    if (!empty($_POST['remove_' . $column])) $value = '';
+                    $mediaType = in_array((string) ($_POST['media_type'] ?? 'image'), ['image', 'video'], true) ? (string) $_POST['media_type'] : 'image';
+                    $uploaded = upload_brand_media($_FILES[$column . '_upload'] ?? [], $mediaType);
+                    if ($uploaded !== null) $value = $uploaded;
+                    $oldType = (string) ($_POST['current_media_type'] ?? '');
+                    if ($value !== '' && $oldType !== '' && $oldType !== $mediaType && $uploaded === null) {
+                        $validationErrors[] = 'برای تغییر نوع رسانه، فایل تازهٔ همان نوع را بارگذاری کنید.';
+                    }
+                    if (!empty($field['required']) && $value === '') $validationErrors[] = 'فایل تصویر یا ویدیوی آرشیو الزامی است.';
+                    $values[$column] = safe_media_src($value, '');
+                    continue;
+                }
                 if ($field['type'] === 'image') {
                     $value = trim((string) ($_POST['current_' . $column] ?? ''));
                     if (!empty($_POST['remove_' . $column])) $value = '';
@@ -139,8 +194,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $validationErrors[] = 'پیوند انگلیسی معتبر نیست.';
                     }
                 }
-                if ($field['type'] === 'select' && !array_key_exists($value, $field['options'])) {
-                    $value = (string) array_key_first($field['options']);
+                if (in_array($field['type'], ['select', 'brand_select'], true)) {
+                    if ($field['options'] === []) {
+                        $validationErrors[] = 'ابتدا یک برند همکار بسازید.';
+                        $value = '';
+                    } elseif (!array_key_exists($value, $field['options'])) {
+                        $value = (string) array_key_first($field['options']);
+                    }
                 }
                 if ($field['type'] === 'date' && $value !== '') {
                     $date = DateTime::createFromFormat('Y-m-d', $value);
@@ -273,6 +333,7 @@ try {
 $pageTitles = [
     'dashboard' => 'نمای کلی', 'content' => 'محتوای صفحهٔ اصلی', 'services' => 'مدیریت خدمات',
     'projects' => 'مدیریت نمونه‌کارها', 'testimonials' => 'دیدگاه همراهان', 'articles' => 'دفترچه نگاه',
+    'brands' => 'برندهای همکار', 'brand_media' => 'آرشیو رسانهٔ برندها',
     'inquiries' => 'درخواست‌های تماس', 'account' => 'حساب‌های مدیران',
 ];
 $pageTitle = $pageTitles[$page];
@@ -284,6 +345,8 @@ $navItems = [
     'projects' => ['نمونه‌کارها', 'chart'],
     'testimonials' => ['دیدگاه‌ها', 'quote'],
     'articles' => ['دفترچه نگاه', 'spark'],
+    'brands' => ['برندهای همکار', 'spark'],
+    'brand_media' => ['آرشیو رسانه', 'chart'],
     'inquiries' => ['درخواست‌های تماس', 'mail'],
     'account' => ['حساب مدیران', 'plus'],
 ];
@@ -293,13 +356,18 @@ $editId = max(0, (int) ($_GET['id'] ?? 0));
 $actionMode = (string) ($_GET['action'] ?? '');
 $editItem = null;
 $listItems = [];
+$entityTableError = '';
 if ($entityMeta !== null) {
-    if ($actionMode === 'edit' && $editId > 0) {
-        $statement = $pdo->prepare('SELECT * FROM `' . $entityMeta['table'] . '` WHERE id = :id LIMIT 1');
-        $statement->execute(['id' => $editId]);
-        $editItem = $statement->fetch() ?: null;
+    try {
+        if ($actionMode === 'edit' && $editId > 0) {
+            $statement = $pdo->prepare('SELECT * FROM `' . $entityMeta['table'] . '` WHERE id = :id LIMIT 1');
+            $statement->execute(['id' => $editId]);
+            $editItem = $statement->fetch() ?: null;
+        }
+        $listItems = $pdo->query('SELECT * FROM `' . $entityMeta['table'] . '` ORDER BY sort_order ASC, id DESC')->fetchAll();
+    } catch (Throwable $exception) {
+        $entityTableError = 'جدول این بخش در پایگاه داده پیدا نشد. برای نصب یا به‌روزرسانی، database/schema.sql را اجرا کنید.';
     }
-    $listItems = $pdo->query('SELECT * FROM `' . $entityMeta['table'] . '` ORDER BY sort_order ASC, id DESC')->fetchAll();
 }
 
 $stats = [];
@@ -318,12 +386,25 @@ function render_admin_field(string $column, array $field, array $item): void
     echo '<label class="admin-field"><span>' . e($field['label']) . (!empty($field['required']) ? ' <b>*</b>' : '') . '</span>';
     if ($field['type'] === 'textarea') {
         echo '<textarea name="' . e($column) . '" rows="5"' . $required . '>' . e($value) . '</textarea>';
-    } elseif ($field['type'] === 'select') {
+    } elseif (in_array($field['type'], ['select', 'brand_select'], true)) {
         echo '<select name="' . e($column) . '">';
         foreach ($field['options'] as $optionValue => $optionLabel) {
             echo '<option value="' . e($optionValue) . '"' . ((string) $value === (string) $optionValue ? ' selected' : '') . '>' . e($optionLabel) . '</option>';
         }
         echo '</select>';
+    } elseif ($field['type'] === 'media') {
+        $safeMedia = safe_media_src($value, '');
+        $mediaType = (string) ($item['media_type'] ?? 'image');
+        if ($safeMedia !== '') {
+            $mediaUrl = preg_match('/^https:\/\//i', $safeMedia) ? $safeMedia : '../' . $safeMedia;
+            if ($mediaType === 'video') {
+                echo '<span class="image-current"><video src="' . e($mediaUrl) . '" controls preload="metadata"></video><span>ویدیوی فعلی</span></span>';
+            } else {
+                echo '<span class="image-current"><img src="' . e($mediaUrl) . '" alt=""><span>تصویر فعلی</span></span>';
+            }
+        }
+        echo '<input type="hidden" name="current_' . e($column) . '" value="' . e($value) . '"><input type="hidden" name="current_media_type" value="' . e($mediaType) . '"><input type="file" name="' . e($column) . '_upload" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm">';
+        if ($safeMedia !== '') echo '<label class="check-label"><input type="checkbox" name="remove_' . e($column) . '" value="1"> حذف فایل فعلی</label>';
     } elseif ($field['type'] === 'image') {
         if ((string) $value !== '') echo '<span class="image-current"><img src="../' . e(safe_image_src($value, '')) . '" alt=""><span>تصویر فعلی</span></span>';
         echo '<input type="hidden" name="current_' . e($column) . '" value="' . e($value) . '"><input type="file" name="' . e($column) . '_upload" accept="image/jpeg,image/png,image/webp,image/gif">';
@@ -382,7 +463,7 @@ function render_admin_field(string $column, array $field, array $item): void
                     </section>
                     <section class="admin-card quick-card"><div class="admin-card-heading"><div><span class="admin-kicker">دسترسی سریع</span><h2>از کجا شروع کنیم؟</h2></div></div><div class="quick-links"><a href="index.php?page=content"><span class="quick-icon">✳</span><span><strong>ویرایش صفحهٔ اصلی</strong><small>تیترها، رنگ‌ها و اطلاعات برند</small></span><?= icon_svg('arrow-left') ?></a><a href="index.php?page=projects&action=new"><span class="quick-icon">↗</span><span><strong>افزودن نمونه‌کار</strong><small>یک روایت تازه به ویترین اضافه کنید</small></span><?= icon_svg('arrow-left') ?></a><a href="index.php?page=articles&action=new"><span class="quick-icon">✎</span><span><strong>نوشتن یادداشت</strong><small>فکرهای تازه‌تان را منتشر کنید</small></span><?= icon_svg('arrow-left') ?></a></div></section>
                 </div>
-                <div class="admin-note"><span>!</span><p><strong>پیش از انتشار:</strong> نمونه‌کارها و دیدگاه‌های فعلی برای نمایش اولیه و مفهومی هستند؛ برای استفادهٔ عمومی، آن‌ها را از بخش‌های مربوط با اطلاعات و مجوز واقعی جایگزین کنید.</p></div>
+                <div class="admin-note"><span>!</span><p><strong>پیش از انتشار:</strong> نمونه‌کارهای اولیه مفهومی‌اند. دیدگاه مشتری را فقط با متن واقعی و اجازهٔ انتشار وارد کنید؛ دیدگاه‌های نمایشی قدیمی در سایت عمومی پنهان شده‌اند.</p></div>
 
             <?php elseif ($page === 'content'): ?>
                 <div class="content-intro"><div><span class="admin-kicker">همه‌چیز در یک نگاه</span><h2>خانهٔ نگاه را به زبان خودتان بنویسید.</h2><p>متن هر بخش، پیوندها، راه‌های تماس و رنگ‌های سایت را از همین‌جا تغییر دهید. برای محتوای تکرارشونده از بخش‌های جداگانهٔ خدمات، نمونه‌کار و یادداشت‌ها استفاده کنید.</p></div><span class="content-intro-mark">ن</span></div>
@@ -396,6 +477,11 @@ function render_admin_field(string $column, array $field, array $item): void
                                         <span><?= e($field['label']) ?></span>
                                         <?php if ($field['type'] === 'textarea'): ?><textarea name="settings[<?= e($field['key']) ?>]" rows="3"><?= e($value) ?></textarea>
                                         <?php elseif ($field['type'] === 'color'): ?><span class="color-control"><input type="color" name="settings[<?= e($field['key']) ?>]" value="<?= e(safe_color($value, '#155C5A')) ?>"><input type="text" value="<?= e(safe_color($value, '#155C5A')) ?>" readonly dir="ltr"></span>
+                                        <?php elseif ($field['type'] === 'font'): ?>
+                                            <?php $fontValue = safe_font_src($value); ?>
+                                            <input type="hidden" name="settings[<?= e($field['key']) ?>]" value="<?= e($fontValue) ?>">
+                                            <span class="upload-setting"><small><?= $fontValue !== '' ? 'فونت اختصاصی فعال است: ' . e(pathinfo($fontValue, PATHINFO_EXTENSION)) : 'بدون فونت اختصاصی؛ فونت پیش‌فرض سایت استفاده می‌شود.' ?></small><input type="file" name="font_upload" accept=".woff2,.woff,.ttf,.otf, font/woff2,font/woff,font/ttf,font/otf"></span>
+                                            <?php if ($fontValue !== ''): ?><span class="check-label"><input type="checkbox" name="remove_custom_font" value="1"> حذف فونت اختصاصی</span><?php endif; ?>
                                         <?php else: ?><input type="text" name="settings[<?= e($field['key']) ?>]" value="<?= e($value) ?>"<?= str_ends_with($field['key'], '_url') || str_starts_with($field['key'], 'social_') ? ' dir="ltr"' : '' ?>><?php endif; ?>
                                         <?php if ($field['key'] === 'hero_image'): ?><span class="upload-setting"><small>یا تصویر اصلی را از رایانه بارگذاری کنید</small><input type="file" name="hero_upload" accept="image/jpeg,image/png,image/webp,image/gif"></span><?php endif; ?>
                                     </label>
@@ -407,9 +493,10 @@ function render_admin_field(string $column, array $field, array $item): void
                 </form>
 
             <?php elseif ($entityMeta !== null): ?>
+                <?php if ($entityTableError !== ''): ?><div class="admin-alert admin-alert--warning"><?= e($entityTableError) ?></div><?php endif; ?>
                 <div class="list-page-heading"><div><span class="admin-kicker">مدیریت محتوا</span><h2><?= e($entityMeta['title']) ?></h2><p>موارد منتشرشده در صفحهٔ اصلی نمایش داده می‌شوند. ترتیب نمایش را با عدد مرتب‌سازی تنظیم کنید.</p></div><a class="admin-button admin-button-primary" href="index.php?page=<?= e($page) ?>&action=new"><?= icon_svg('plus') ?> افزودن <?= e($entityMeta['singular']) ?></a></div>
                 <?php if ($actionMode === 'new' || $editItem !== null): ?>
-                    <?php $formItem = $editItem ?: ['is_published' => 1, 'sort_order' => count($listItems) + 1, 'visual_theme' => 'saffron', 'icon' => 'spark', 'published_at' => date('Y-m-d')]; ?>
+                    <?php $formItem = $editItem ?: ['is_published' => 1, 'sort_order' => count($listItems) + 1, 'visual_theme' => 'saffron', 'icon' => 'spark', 'published_at' => date('Y-m-d'), 'media_type' => 'image', 'aspect_ratio' => '16:9']; ?>
                     <section class="admin-card item-form-card"><div class="admin-card-heading"><div><span class="admin-kicker"><?= $editItem ? 'ویرایش مورد' : 'مورد تازه' ?></span><h2><?= $editItem ? e($formItem[$entityMeta['name_field']] ?? $entityMeta['singular']) : 'افزودن ' . e($entityMeta['singular']) ?></h2></div><a class="admin-close" href="index.php?page=<?= e($page) ?>">بستن</a></div>
                         <form class="item-form" method="post" enctype="multipart/form-data">
                             <?= csrf_field() ?><input type="hidden" name="action" value="save_item"><input type="hidden" name="return_page" value="<?= e($page) ?>"><input type="hidden" name="entity" value="<?= e($page) ?>"><input type="hidden" name="id" value="<?= e($editItem['id'] ?? 0) ?>">
@@ -422,7 +509,7 @@ function render_admin_field(string $column, array $field, array $item): void
                 <section class="admin-card table-card"><div class="admin-card-heading"><div><span class="admin-kicker">فهرست سایت</span><h2><?= fa_num((string) count($listItems)) ?> <?= e($entityMeta['singular']) ?></h2></div><span class="list-help">موارد غیرفعال در سایت دیده نمی‌شوند.</span></div>
                     <?php if ($listItems === []): ?><div class="empty-state"><span>✳</span><strong>هنوز موردی ثبت نشده</strong><p>با دکمهٔ بالا اولین <?= e($entityMeta['singular']) ?> را اضافه کنید.</p></div>
                     <?php else: ?><div class="table-scroll"><table class="admin-table"><thead><tr><th>عنوان</th><th>دسته / شناسه</th><th>ترتیب</th><th>وضعیت</th><th>عملیات</th></tr></thead><tbody>
-                        <?php foreach ($listItems as $item): ?><tr><td><strong><?= e($item[$entityMeta['name_field']] ?? '') ?></strong><?php if (!empty($item['excerpt'])): ?><small><?= e(limit_admin_text((string) $item['excerpt'], 86)) ?></small><?php elseif (!empty($item['tagline'])): ?><small><?= e($item['tagline']) ?></small><?php endif; ?></td><td><?= e($item['category'] ?? $item['slug'] ?? $item['company'] ?? '—') ?></td><td><?= fa_num((string) ($item['sort_order'] ?? '—')) ?></td><td><span class="status-pill <?= !empty($item['is_published']) ? 'status-published' : 'status-draft' ?>"><?= !empty($item['is_published']) ? 'منتشرشده' : 'پیش‌نویس' ?></span></td><td><div class="table-actions"><a class="table-action" href="index.php?page=<?= e($page) ?>&action=edit&id=<?= e($item['id']) ?>">ویرایش</a><form method="post"><?= csrf_field() ?><input type="hidden" name="action" value="toggle_item"><input type="hidden" name="return_page" value="<?= e($page) ?>"><input type="hidden" name="entity" value="<?= e($page) ?>"><input type="hidden" name="id" value="<?= e($item['id']) ?>"><button class="table-action" type="submit"><?= !empty($item['is_published']) ? 'پیش‌نویس' : 'انتشار' ?></button></form><form method="post" data-confirm="این مورد برای همیشه حذف شود؟"><?= csrf_field() ?><input type="hidden" name="action" value="delete_item"><input type="hidden" name="return_page" value="<?= e($page) ?>"><input type="hidden" name="entity" value="<?= e($page) ?>"><input type="hidden" name="id" value="<?= e($item['id']) ?>"><button class="table-action table-action-danger" type="submit">حذف</button></form></div></td></tr><?php endforeach; ?>
+                        <?php foreach ($listItems as $item): ?><tr><td><strong><?= e($item[$entityMeta['name_field']] ?? '') ?></strong><?php if (!empty($item['excerpt'])): ?><small><?= e(limit_admin_text((string) $item['excerpt'], 86)) ?></small><?php elseif (!empty($item['tagline'])): ?><small><?= e($item['tagline']) ?></small><?php endif; ?></td><td><?= e($page === 'brand_media' ? ($entities['brand_media']['fields']['brand_id']['options'][(string) ($item['brand_id'] ?? '')] ?? 'برند حذف‌شده') : ($item['category'] ?? $item['slug'] ?? $item['company'] ?? '—')) ?></td><td><?= fa_num((string) ($item['sort_order'] ?? '—')) ?></td><td><span class="status-pill <?= !empty($item['is_published']) ? 'status-published' : 'status-draft' ?>"><?= !empty($item['is_published']) ? 'منتشرشده' : 'پیش‌نویس' ?></span></td><td><div class="table-actions"><a class="table-action" href="index.php?page=<?= e($page) ?>&action=edit&id=<?= e($item['id']) ?>">ویرایش</a><form method="post"><?= csrf_field() ?><input type="hidden" name="action" value="toggle_item"><input type="hidden" name="return_page" value="<?= e($page) ?>"><input type="hidden" name="entity" value="<?= e($page) ?>"><input type="hidden" name="id" value="<?= e($item['id']) ?>"><button class="table-action" type="submit"><?= !empty($item['is_published']) ? 'پیش‌نویس' : 'انتشار' ?></button></form><form method="post" data-confirm="این مورد برای همیشه حذف شود؟"><?= csrf_field() ?><input type="hidden" name="action" value="delete_item"><input type="hidden" name="return_page" value="<?= e($page) ?>"><input type="hidden" name="entity" value="<?= e($page) ?>"><input type="hidden" name="id" value="<?= e($item['id']) ?>"><button class="table-action table-action-danger" type="submit">حذف</button></form></div></td></tr><?php endforeach; ?>
                     </tbody></table></div><?php endif; ?>
                 </section>
 

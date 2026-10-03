@@ -29,9 +29,12 @@ function default_settings(): array
         'services_footnote_link' => 'ببینیم چطور؟',
         'portfolio_note' => 'نمونه‌های این صفحه مفهومی هستند و برای نمایش اولیه ساخته شده‌اند.',
         'portfolio_cta' => 'پروژه بعدی را با هم بسازیم',
+        'partners_eyebrow' => 'اعتمادهای دوطرفه',
+        'partners_title' => 'برندهایی که هم‌مسیر نگاه‌اند',
+        'partners_description' => 'آرشیوی از همراهی‌ها؛ هر نام، دریچه‌ای به روایت، بازخورد و محتوای همان برند است.',
         'about_button_label' => 'بیشتر با هم آشنا شویم',
         'testimonials_intro' => 'بهترین نشانِ کار خوب، حرف کسانی‌ست که در این مسیر کنارمان بوده‌اند.',
-        'testimonials_disclaimer' => 'نام‌ها و روایت‌های صفحه، نمونه هستند و پیش از انتشار نهایی باید با اطلاعات واقعی جایگزین شوند.',
+        'testimonials_disclaimer' => 'دیدگاه‌ها فقط با اجازهٔ صاحبان نظر منتشر می‌شوند.',
         'journal_description' => 'یادداشت‌های کوتاه ما درباره برند، تبلیغات و تجربه‌های دیجیتال.',
         'contact_form_title' => 'از اینجا شروع کنیم',
         'contact_form_subtitle' => 'پاسخ‌گویی در اولین فرصت',
@@ -50,6 +53,8 @@ function default_settings(): array
         'footer_quick_links_title' => 'دسترسی سریع',
         'footer_brand_links_title' => 'با نگاه مدیا',
         'footer_contact_title' => 'راه‌های ارتباطی',
+        'source_download_url' => 'https://github.com/Smohamad933/kian-fanavran-negah/archive/refs/heads/arena/01a10192-kian-fanavran-negah.zip',
+        'custom_font_path' => '',
         'services_eyebrow' => 'توانمندی‌های ما',
         'services_title' => "از ایده تا اثری که\nدر ذهن می‌ماند",
         'services_description' => 'هر نقطه تماس برند شما، فرصتی‌ست برای ساختن یک تجربه بهتر. ما این فرصت‌ها را با نگاه استراتژیک و اجرای خلاق به هم وصل می‌کنیم.',
@@ -71,6 +76,7 @@ function default_settings(): array
         'journal_title' => 'فکرهایی برای فردا',
         'nav_services' => 'خدمات',
         'nav_portfolio' => 'نمونه‌کارها',
+        'nav_partners' => 'برندهای همکار',
         'nav_about' => 'درباره ما',
         'nav_journal' => 'دفترچه نگاه',
         'nav_contact' => 'ارتباط با ما',
@@ -100,6 +106,60 @@ function default_settings(): array
     ];
 }
 
+function default_brands(): array
+{
+    $records = [
+        ['name' => 'رنس تکس', 'slug' => 'rans-tex'],
+        ['name' => 'گالری طلاوجواهر محمود', 'slug' => 'mahmoud-jewelry'],
+        ['name' => 'رویان شبکه', 'slug' => 'royan-network'],
+        ['name' => 'الدراگ استور', 'slug' => 'aldrag-store'],
+        ['name' => 'دانشگاه شهید چمران اهواز', 'slug' => 'shahid-chamran-university'],
+        ['name' => 'وزارت علوم، تحقیقات و فناوری', 'slug' => 'ministry-science-research'],
+        ['name' => 'چمران پلاس', 'slug' => 'chamran-plus'],
+        ['name' => 'صداوسیما مرکز خوزستان', 'slug' => 'irib-khuzestan'],
+        ['name' => 'انجمن خیریه ۱۴ معصوم', 'slug' => 'charity-14-maasoom'],
+        ['name' => 'گالری نقره سیده راد', 'slug' => 'seyedarad-silver'],
+        ['name' => 'گالری جواهرات هم‌نفس', 'slug' => 'hamnafas-jewelry'],
+        ['name' => 'سازه‌های آبی شوشتر', 'slug' => 'shushtar-water-structures'],
+        ['name' => 'مجموعه نظریان', 'slug' => 'nazarian-group'],
+        ['name' => 'ابزارآلات قشقایی', 'slug' => 'ghashghai-tools'],
+        ['name' => 'شهرداری اهواز', 'slug' => 'ahvaz-municipality'],
+        ['name' => 'استانداری هرمزگان', 'slug' => 'hormozgan-governorate'],
+        ['name' => 'استانداری خوزستان', 'slug' => 'khuzestan-governorate'],
+        ['name' => 'کنسرت علیرضا قربانی', 'slug' => 'alireza-ghorbani-concert'],
+        ['name' => 'ارکستر سازهای ایرانی به یاد خالقی', 'slug' => 'khalaghi-iranian-orchestra'],
+        ['name' => 'جایزه ملی آهنگسازی استاد روح‌الله خالقی', 'slug' => 'khalaghi-composition-award'],
+        ['name' => 'خانه موسیقی تهران', 'slug' => 'tehran-music-house'],
+        ['name' => 'مشاوران افق دانش ثریا', 'slug' => 'ofogh-danesh-soraya'],
+        ['name' => 'مرکز رسانه استان خوزستان', 'slug' => 'khuzestan-media-center'],
+        ['name' => 'سازمان تبلیغات استان خوزستان', 'slug' => 'khuzestan-advertising-organization'],
+        ['name' => 'آژانس تبلیغاتی لامیلا', 'slug' => 'lamila-ad-agency'],
+        ['name' => 'مجموعه سرودهای استان خوزستان', 'slug' => 'khuzestan-choir-group'],
+        ['name' => 'مؤسسه برتینا', 'slug' => 'bertina-institute'],
+        ['name' => 'گروه موسیقی نی‌نوا', 'slug' => 'ney-nava-music-group'],
+        ['name' => 'دفتر امام جمعه اهواز', 'slug' => 'ahvaz-friday-office'],
+        ['name' => 'استودیو هور', 'slug' => 'studio-hoor'],
+        ['name' => 'کلینیک مشاوره کودک و نوجوان بهشت زندگی', 'slug' => 'behesht-zendegi-clinic'],
+        ['name' => 'طلا و جواهرات محمد سیاوشی', 'slug' => 'mohammad-siavashi-jewelry'],
+    ];
+
+    $result = [];
+    foreach ($records as $index => $record) {
+        $result[] = array_merge([
+            'id' => $index + 1,
+            'logo' => '',
+            'short_description' => '',
+            'long_description' => '',
+            'testimonial_quote' => '',
+            'testimonial_author' => '',
+            'testimonial_role' => '',
+            'sort_order' => $index + 1,
+            'is_published' => 1,
+        ], $record);
+    }
+    return $result;
+}
+
 function default_services(): array
 {
     return [
@@ -121,11 +181,8 @@ function default_projects(): array
 
 function default_testimonials(): array
 {
-    return [
-        ['id' => 1, 'name' => 'سارا امینی', 'role' => 'مدیر برند', 'company' => 'همراه پروژه ریشه', 'quote' => 'نگاه مدیا خیلی زود مسئله اصلی برند را فهمید. خروجی فقط زیبا نبود؛ تیم ما بالاخره زبان مشترکی برای معرفی محصول پیدا کرد.', 'sort_order' => 1, 'is_published' => 1],
-        ['id' => 2, 'name' => 'آرمان نیک‌پی', 'role' => 'بنیان‌گذار', 'company' => 'همراه پروژه نقش', 'quote' => 'از روز اول تا اجرا، حس کردیم یک تیم هم‌مسیر کنارمان است؛ دقیق، خوش‌فکر و متعهد به نتیجه.', 'sort_order' => 2, 'is_published' => 1],
-        ['id' => 3, 'name' => 'مهتاب یوسفی', 'role' => 'مدیر بازاریابی', 'company' => 'همراه پروژه دُرنا', 'quote' => 'کمپین با یک ایده ساده شروع شد و با برنامه‌ریزی دقیق به گفت‌وگویی واقعی با مخاطبان ما تبدیل شد.', 'sort_order' => 3, 'is_published' => 1],
-    ];
+    // هیچ نقل‌قول مشتری تا دریافت و تأیید متن واقعی به‌صورت پیش‌فرض منتشر نمی‌شود.
+    return [];
 }
 
 function default_articles(): array
@@ -144,13 +201,17 @@ function content_groups(): array
             ['key' => 'brand_descriptor', 'label' => 'توضیح کوتاه برند', 'type' => 'text'],
             ['key' => 'nav_services', 'label' => 'عنوان پیوند خدمات', 'type' => 'text'],
             ['key' => 'nav_portfolio', 'label' => 'عنوان پیوند نمونه‌کارها', 'type' => 'text'],
+            ['key' => 'nav_partners', 'label' => 'عنوان پیوند برندهای همکار', 'type' => 'text'],
             ['key' => 'nav_about', 'label' => 'عنوان پیوند درباره ما', 'type' => 'text'],
             ['key' => 'nav_journal', 'label' => 'عنوان پیوند دفترچه نگاه', 'type' => 'text'],
             ['key' => 'nav_contact', 'label' => 'عنوان پیوند تماس', 'type' => 'text'],
             ['key' => 'footer_quick_links_title', 'label' => 'عنوان ستون پیوندهای سریع', 'type' => 'text'],
             ['key' => 'footer_brand_links_title', 'label' => 'عنوان ستون همکاری', 'type' => 'text'],
             ['key' => 'footer_contact_title', 'label' => 'عنوان ستون راه‌های ارتباطی', 'type' => 'text'],
+            ['key' => 'source_download_url', 'label' => 'پیوند دانلود سورس سایت', 'type' => 'text'],
             ['key' => 'footer_description', 'label' => 'معرفی کوتاه در پایین سایت', 'type' => 'textarea'],
+            ['key' => 'custom_font_path', 'label' => 'فونت دلخواه سایت', 'type' => 'font'],
+
             ['key' => 'contact_phone', 'label' => 'شماره تماس', 'type' => 'text'],
             ['key' => 'contact_email', 'label' => 'ایمیل', 'type' => 'text'],
             ['key' => 'contact_address', 'label' => 'نشانی', 'type' => 'text'],
@@ -191,6 +252,11 @@ function content_groups(): array
             ['key' => 'portfolio_description', 'label' => 'توضیح بخش', 'type' => 'textarea'],
             ['key' => 'portfolio_note', 'label' => 'یادداشت پایین نمونه‌کارها', 'type' => 'text'],
             ['key' => 'portfolio_cta', 'label' => 'متن پیوند پایانی', 'type' => 'text'],
+        ],
+        'برندهای همکار' => [
+            ['key' => 'partners_eyebrow', 'label' => 'برچسب بخش', 'type' => 'text'],
+            ['key' => 'partners_title', 'label' => 'عنوان بخش', 'type' => 'text'],
+            ['key' => 'partners_description', 'label' => 'توضیح بخش', 'type' => 'textarea'],
         ],
         'درباره نگاه' => [
             ['key' => 'about_eyebrow', 'label' => 'برچسب بخش', 'type' => 'text'],

@@ -43,6 +43,8 @@ function app_config(): array
         'db_pass' => getenv('NEGAAH_DB_PASS') !== false ? (string) getenv('NEGAAH_DB_PASS') : '',
         'db_charset' => 'utf8mb4',
         'max_upload_bytes' => 4 * 1024 * 1024,
+        'max_video_upload_bytes' => 100 * 1024 * 1024,
+        'max_font_upload_bytes' => 8 * 1024 * 1024,
     ], $local);
 
     return $config;
@@ -166,6 +168,20 @@ function safe_image_src(mixed $value, string $fallback = ''): string
     return $fallback;
 }
 
+function safe_media_src(mixed $value, string $fallback = ''): string
+{
+    $value = trim((string) $value);
+    if ($value === '') return $fallback;
+    if (preg_match('#^uploads/media/[a-f0-9]{32}[.](?:jpg|png|webp|gif|mp4|webm)$#i', $value) || preg_match('/^https:\/\//i', $value)) return $value;
+    return $fallback;
+}
+
+function safe_font_src(mixed $value): string
+{
+    $value = trim((string) $value);
+    return preg_match('#^uploads/fonts/[a-f0-9]{32}[.](woff2?|ttf|otf)$#i', $value) ? $value : '';
+}
+
 function upload_image(array $file): ?string
 {
     if (!isset($file['error']) || (int) $file['error'] === UPLOAD_ERR_NO_FILE) {
@@ -205,6 +221,72 @@ function upload_image(array $file): ?string
     return 'uploads/' . $filename;
 }
 
+function upload_brand_media(array $file, string $mediaType): ?string
+{
+    if (!isset($file['error']) || (int) $file['error'] === UPLOAD_ERR_NO_FILE) return null;
+    if ((int) $file['error'] !== UPLOAD_ERR_OK || !isset($file['tmp_name']) || !is_uploaded_file((string) $file['tmp_name'])) {
+        throw new RuntimeException('بارگذاری فایل رسانه‌ای انجام نشد. تنظیمات PHP و IIS را بررسی کنید.');
+    }
+
+    $isVideo = $mediaType === 'video';
+    $max = (int) (app_config()[$isVideo ? 'max_video_upload_bytes' : 'max_upload_bytes'] ?? ($isVideo ? 104857600 : 4194304));
+    if ((int) ($file['size'] ?? 0) > $max) {
+        throw new RuntimeException($isVideo ? 'حجم ویدیو باید حداکثر ۱۰۰ مگابایت باشد.' : 'حجم تصویر باید حداکثر ۴ مگابایت باشد.');
+    }
+
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    $mime = $finfo->file((string) $file['tmp_name']);
+    $allowed = $isVideo
+        ? ['video/mp4' => 'mp4', 'video/webm' => 'webm']
+        : ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp', 'image/gif' => 'gif'];
+    if (!isset($allowed[$mime])) {
+        throw new RuntimeException($isVideo ? 'ویدیو باید MP4 یا WEBM باشد.' : 'تصویر باید JPG، PNG، WEBP یا GIF باشد.');
+    }
+
+    $uploadDir = dirname(__DIR__) . '/uploads/media';
+    if (!is_dir($uploadDir) && !mkdir($uploadDir, 0755, true) && !is_dir($uploadDir)) {
+        throw new RuntimeException('پوشهٔ آرشیو رسانه‌ها در دسترس نیست.');
+    }
+    $filename = bin2hex(random_bytes(16)) . '.' . $allowed[$mime];
+    if (!move_uploaded_file((string) $file['tmp_name'], $uploadDir . '/' . $filename)) {
+        throw new RuntimeException('ذخیرهٔ فایل رسانه‌ای با خطا روبه‌رو شد.');
+    }
+    return 'uploads/media/' . $filename;
+}
+
+function upload_custom_font(array $file): ?string
+{
+    if (!isset($file['error']) || (int) $file['error'] === UPLOAD_ERR_NO_FILE) return null;
+    if ((int) $file['error'] !== UPLOAD_ERR_OK || !isset($file['tmp_name']) || !is_uploaded_file((string) $file['tmp_name'])) {
+        throw new RuntimeException('بارگذاری فونت انجام نشد. دوباره تلاش کنید.');
+    }
+
+    $max = (int) (app_config()['max_font_upload_bytes'] ?? 8388608);
+    if ((int) ($file['size'] ?? 0) > $max) throw new RuntimeException('حجم فونت باید حداکثر ۸ مگابایت باشد.');
+    $extension = strtolower(pathinfo((string) ($file['name'] ?? ''), PATHINFO_EXTENSION));
+    if (!in_array($extension, ['woff2', 'woff', 'ttf', 'otf'], true)) {
+        throw new RuntimeException('فرمت فونت باید WOFF2، WOFF، TTF یا OTF باشد.');
+    }
+
+    $handle = fopen((string) $file['tmp_name'], 'rb');
+    $signature = $handle ? fread($handle, 4) : false;
+    if ($handle) fclose($handle);
+    $signatures = ['woff2' => 'wOF2', 'woff' => 'wOFF', 'ttf' => "\x00\x01\x00\x00", 'otf' => 'OTTO'];
+    if ($signature === false || $signature !== $signatures[$extension]) {
+        throw new RuntimeException('محتوای فایل با فرمت فونت انتخاب‌شده سازگار نیست.');
+    }
+
+    $uploadDir = dirname(__DIR__) . '/uploads/fonts';
+    if (!is_dir($uploadDir) && !mkdir($uploadDir, 0755, true) && !is_dir($uploadDir)) {
+        throw new RuntimeException('پوشهٔ فونت‌ها در دسترس نیست.');
+    }
+    $filename = bin2hex(random_bytes(16)) . '.' . $extension;
+    if (!move_uploaded_file((string) $file['tmp_name'], $uploadDir . '/' . $filename)) {
+        throw new RuntimeException('ذخیرهٔ فونت با خطا روبه‌رو شد.');
+    }
+    return 'uploads/fonts/' . $filename;
+}
+
 function load_site_data(?PDO $pdo): array
 {
     $settings = default_settings();
@@ -212,6 +294,7 @@ function load_site_data(?PDO $pdo): array
     $projects = default_projects();
     $testimonials = default_testimonials();
     $articles = default_articles();
+    $brands = default_brands();
 
     if ($pdo !== null) {
         try {
@@ -222,14 +305,22 @@ function load_site_data(?PDO $pdo): array
             }
             $services = $pdo->query('SELECT * FROM services WHERE is_published = 1 ORDER BY sort_order ASC, id ASC')->fetchAll();
             $projects = $pdo->query('SELECT * FROM projects WHERE is_published = 1 ORDER BY sort_order ASC, id DESC LIMIT 6')->fetchAll();
-            $testimonials = $pdo->query('SELECT * FROM testimonials WHERE is_published = 1 ORDER BY sort_order ASC, id DESC LIMIT 6')->fetchAll();
+            $testimonials = $pdo->query('SELECT * FROM testimonials WHERE is_published = 1 ORDER BY sort_order ASC, id DESC LIMIT 12')->fetchAll();
+            $legacyDemoReviews = [
+                'سارا امینی|همراه پروژه ریشه',
+                'آرمان نیک‌پی|همراه پروژه نقش',
+                'مهتاب یوسفی|همراه پروژه دُرنا',
+            ];
+            $testimonials = array_values(array_filter($testimonials, static fn(array $review): bool => !in_array((string) ($review['name'] ?? '') . '|' . (string) ($review['company'] ?? ''), $legacyDemoReviews, true)));
+            $testimonials = array_slice($testimonials, 0, 6);
             $articles = $pdo->query('SELECT * FROM articles WHERE is_published = 1 ORDER BY published_at DESC, id DESC LIMIT 3')->fetchAll();
+            $brands = $pdo->query('SELECT * FROM brands WHERE is_published = 1 ORDER BY sort_order ASC, id ASC')->fetchAll();
         } catch (Throwable $exception) {
             // The public site remains usable while the database is being installed.
         }
     }
 
-    return compact('settings', 'services', 'projects', 'testimonials', 'articles');
+    return compact('settings', 'services', 'projects', 'testimonials', 'articles', 'brands');
 }
 
 function icon_svg(string $name, string $class = ''): string

@@ -10,4 +10,6 @@ return [
     'db_pass' => 'CHANGE_THIS_DATABASE_PASSWORD',
     'db_charset' => 'utf8mb4',
     'max_upload_bytes' => 4 * 1024 * 1024,
+    'max_video_upload_bytes' => 100 * 1024 * 1024,
+    'max_font_upload_bytes' => 8 * 1024 * 1024,
 ];

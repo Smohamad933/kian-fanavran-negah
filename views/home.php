@@ -3,6 +3,10 @@ if (!defined('SITE_RENDER')) {
     http_response_code(404);
     exit;
 }
+$customFontPath = safe_font_src($settings['custom_font_path'] ?? '');
+$customFontFormat = match (strtolower(pathinfo($customFontPath, PATHINFO_EXTENSION))) {
+    'woff2' => 'woff2', 'woff' => 'woff', 'ttf' => 'truetype', 'otf' => 'opentype', default => ''
+};
 ?>
 <!doctype html>
 <html lang="fa" dir="rtl">
@@ -27,6 +31,10 @@ if (!defined('SITE_RENDER')) {
             --ink: <?= e($inkColor) ?>;
             --paper: <?= e($surfaceColor) ?>;
         }
+        <?php if ($customFontPath !== ''): ?>
+        @font-face { font-family: 'NegaahCustom'; src: url('<?= e($customFontPath) ?>') format('<?= e($customFontFormat) ?>'); font-weight: 100 900; font-display: swap; }
+        :root { --font: 'NegaahCustom', 'Vazirmatn', Tahoma, sans-serif; }
+        <?php endif; ?>
     </style>
     <script defer src="assets/js/site.js"></script>
 </head>
@@ -48,6 +56,7 @@ if (!defined('SITE_RENDER')) {
             <nav class="primary-nav" id="primary-nav" aria-label="فهرست اصلی">
                 <a href="#services"><?= e($settings['nav_services']) ?></a>
                 <a href="#portfolio"><?= e($settings['nav_portfolio']) ?></a>
+                <a href="#partners"><?= e($settings['nav_partners']) ?></a>
                 <a href="#about"><?= e($settings['nav_about']) ?></a>
                 <a href="#journal"><?= e($settings['nav_journal']) ?></a>
             </nav>
@@ -160,6 +169,29 @@ if (!defined('SITE_RENDER')) {
             </div>
         </section>
 
+        <section class="partners-section section-space" id="partners">
+            <div class="container">
+                <div class="section-heading section-heading-split" data-reveal>
+                    <div>
+                        <div class="eyebrow"><span class="eyebrow-mark"></span><?= e($settings['partners_eyebrow']) ?></div>
+                        <h2><?= e($settings['partners_title']) ?></h2>
+                    </div>
+                    <div class="heading-side partners-heading-side"><p><?= e($settings['partners_description']) ?></p><span class="partners-count"><b><?= fa_num((string) count($brands)) ?></b><small>برند همکار</small></span></div>
+                </div>
+                <div class="partners-grid">
+                    <?php foreach ($brands as $index => $brand): ?>
+                        <?php $brandLogo = safe_image_src($brand['logo'] ?? '', ''); ?>
+                        <a class="partner-card" href="brand.php?slug=<?= e(rawurlencode((string) $brand['slug'])) ?>" data-reveal data-reveal-delay="<?= e((string) (($index % 6) * 45)) ?>">
+                            <span class="partner-symbol"><?php if ($brandLogo !== ''): ?><img src="<?= e($brandLogo) ?>" alt="" loading="lazy"><?php else: ?><span><?= e(first_char($brand['name'] ?? 'ب')) ?></span><?php endif; ?></span>
+                            <span class="partner-name"><?= e($brand['name']) ?></span>
+                            <span class="partner-arrow"><?= icon_svg('arrow') ?></span>
+                        </a>
+                    <?php endforeach; ?>
+                </div>
+                <div class="partners-footnote"><span class="footnote-star">✳</span><span>برای دیدن صفحهٔ هر برند، روی کارت آن کلیک کنید؛ آرشیو و بازخوردها در همان صفحه قرار می‌گیرند.</span></div>
+            </div>
+        </section>
+
         <section class="about-section section-space" id="about">
             <div class="container about-grid">
                 <div class="about-visual" data-reveal>
@@ -202,6 +234,7 @@ if (!defined('SITE_RENDER')) {
             </div>
         </section>
 
+        <?php if ($testimonials !== []): ?>
         <section class="testimonial-section section-space">
             <div class="container">
                 <div class="section-heading section-heading-center" data-reveal>
@@ -221,6 +254,7 @@ if (!defined('SITE_RENDER')) {
                 <?php if (trim($settings['testimonials_disclaimer']) !== ''): ?><div class="testimonial-footnote"><span class="footnote-star">✳</span><span><?= e($settings['testimonials_disclaimer']) ?></span></div><?php endif; ?>
             </div>
         </section>
+        <?php endif; ?>
 
         <?php if ($articles !== []): ?>
         <section class="journal-section section-space" id="journal">
@@ -299,8 +333,8 @@ if (!defined('SITE_RENDER')) {
                     <a href="<?= e(safe_href($settings['social_telegram'], 'https://t.me/')) ?>" target="_blank" rel="noopener noreferrer" aria-label="تلگرام نگاه مدیا"><?= icon_svg('telegram') ?></a>
                 </div>
             </div>
-            <div class="footer-links-column"><h3><?= e($settings['footer_quick_links_title']) ?></h3><a href="#services"><?= e($settings['nav_services']) ?></a><a href="#portfolio"><?= e($settings['nav_portfolio']) ?></a><a href="#about"><?= e($settings['nav_about']) ?></a><a href="#journal"><?= e($settings['nav_journal']) ?></a></div>
-            <div class="footer-links-column"><h3><?= e($settings['footer_brand_links_title']) ?></h3><a href="#contact">درخواست مشاوره</a><a href="#contact">همکاری با ما</a><a href="#contact">پرسش‌های شما</a><a href="admin/login.php">ورود مدیر سایت</a></div>
+            <div class="footer-links-column"><h3><?= e($settings['footer_quick_links_title']) ?></h3><a href="#services"><?= e($settings['nav_services']) ?></a><a href="#portfolio"><?= e($settings['nav_portfolio']) ?></a><a href="#partners"><?= e($settings['nav_partners']) ?></a><a href="#about"><?= e($settings['nav_about']) ?></a><a href="#journal"><?= e($settings['nav_journal']) ?></a></div>
+            <div class="footer-links-column"><h3><?= e($settings['footer_brand_links_title']) ?></h3><a href="#contact">درخواست مشاوره</a><a href="#contact">همکاری با ما</a><a href="#contact">پرسش‌های شما</a><a href="admin/login.php">ورود مدیر سایت</a><a class="source-download-link" href="<?= e(safe_href($settings['source_download_url'], '#')) ?>" target="_blank" rel="noopener noreferrer">دانلود سورس سایت <?= icon_svg('arrow') ?></a></div>
             <div class="footer-contact-column"><h3><?= e($settings['footer_contact_title']) ?></h3><a href="tel:<?= e(preg_replace('/[^0-9+]/', '', (string) $settings['contact_phone'])) ?>"><?= e($settings['contact_phone']) ?></a><a href="mailto:<?= e($settings['contact_email']) ?>"><?= e($settings['contact_email']) ?></a><span><?= e($settings['contact_address']) ?></span><a class="footer-top-link" href="#top">بازگشت به بالا <?= icon_svg('arrow') ?></a></div>
         </div>
         <div class="container footer-bottom"><span>© <?= fa_num(date('Y')) ?> <?= e($settings['brand_name']) ?>. همهٔ حقوق محفوظ است.</span><span class="footer-credit">نگاه مدیا، از خانوادهٔ <b>کیان فناوران نگاه</b></span></div>

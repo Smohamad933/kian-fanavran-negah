@@ -81,6 +81,43 @@ CREATE TABLE IF NOT EXISTS articles (
     KEY idx_articles_public_date (is_published, published_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS brands (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    name VARCHAR(220) NOT NULL,
+    slug VARCHAR(220) NOT NULL,
+    logo VARCHAR(500) NOT NULL DEFAULT '',
+    short_description TEXT NOT NULL,
+    long_description MEDIUMTEXT NOT NULL,
+    testimonial_quote TEXT NOT NULL,
+    testimonial_author VARCHAR(180) NOT NULL DEFAULT '',
+    testimonial_role VARCHAR(180) NOT NULL DEFAULT '',
+    sort_order INT NOT NULL DEFAULT 0,
+    is_published TINYINT(1) NOT NULL DEFAULT 1,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_brand_slug (slug),
+    KEY idx_brands_public_order (is_published, sort_order)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS brand_media (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    brand_id INT UNSIGNED NOT NULL,
+    title VARCHAR(220) NOT NULL,
+    caption TEXT NOT NULL,
+    media_type ENUM('image', 'video') NOT NULL DEFAULT 'image',
+    media_path VARCHAR(500) NOT NULL DEFAULT '',
+    poster_path VARCHAR(500) NOT NULL DEFAULT '',
+    aspect_ratio ENUM('16:9', '9:16', '1:1') NOT NULL DEFAULT '16:9',
+    sort_order INT NOT NULL DEFAULT 0,
+    is_published TINYINT(1) NOT NULL DEFAULT 1,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_brand_media_public_order (brand_id, is_published, sort_order),
+    CONSTRAINT fk_brand_media_brand FOREIGN KEY (brand_id) REFERENCES brands (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS inquiries (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     name VARCHAR(120) NOT NULL,
@@ -126,6 +163,9 @@ INSERT IGNORE INTO site_settings (setting_key, setting_value) VALUES
 ('portfolio_description', 'هر همکاری، یک مسئله تازه و یک فرصت برای ساختن چیزی ماندگار است.'),
 ('portfolio_note', 'نمونه‌های این صفحه مفهومی هستند و برای نمایش اولیه ساخته شده‌اند.'),
 ('portfolio_cta', 'پروژه بعدی را با هم بسازیم'),
+('partners_eyebrow', 'اعتمادهای دوطرفه'),
+('partners_title', 'برندهایی که هم‌مسیر نگاه‌اند'),
+('partners_description', 'آرشیوی از همراهی‌ها؛ هر نام، دریچه‌ای به روایت، بازخورد و محتوای همان برند است.'),
 ('about_eyebrow', 'نگاه ما به ماجرا'),
 ('about_title', 'خلاقیت، وقتی\nاثرگذار است که\nجهت داشته باشد.'),
 ('about_description', 'ما یک تیم مستقل از استراتژیست‌ها، طراحان و سازندگانیم؛ با یک باور مشترک: تبلیغات خوب فقط دیده نمی‌شود، چیزی را در رفتار و ذهن مخاطب تغییر می‌دهد.'),
@@ -147,7 +187,7 @@ INSERT IGNORE INTO site_settings (setting_key, setting_value) VALUES
 ('testimonials_eyebrow', 'از زبان همراهان'),
 ('testimonials_title', 'اعتماد، در جزئیات ساخته می‌شود'),
 ('testimonials_intro', 'بهترین نشانِ کار خوب، حرف کسانی‌ست که در این مسیر کنارمان بوده‌اند.'),
-('testimonials_disclaimer', 'نام‌ها و روایت‌های صفحه، نمونه هستند و پیش از انتشار نهایی باید با اطلاعات واقعی جایگزین شوند.'),
+('testimonials_disclaimer', 'دیدگاه‌ها فقط با اجازهٔ صاحبان نظر منتشر می‌شوند.'),
 ('journal_eyebrow', 'دفترچه نگاه'),
 ('journal_title', 'فکرهایی برای فردا'),
 ('journal_description', 'یادداشت‌های کوتاه ما درباره برند، تبلیغات و تجربه‌های دیجیتال.'),
@@ -178,8 +218,11 @@ INSERT IGNORE INTO site_settings (setting_key, setting_value) VALUES
 ('footer_quick_links_title', 'دسترسی سریع'),
 ('footer_brand_links_title', 'با نگاه مدیا'),
 ('footer_contact_title', 'راه‌های ارتباطی'),
+('source_download_url', 'https://github.com/Smohamad933/kian-fanavran-negah/archive/refs/heads/arena/01a10192-kian-fanavran-negah.zip'),
+('custom_font_path', ''),
 ('nav_services', 'خدمات'),
 ('nav_portfolio', 'نمونه‌کارها'),
+('nav_partners', 'برندهای همکار'),
 ('nav_about', 'درباره ما'),
 ('nav_journal', 'دفترچه نگاه'),
 ('nav_contact', 'ارتباط با ما'),
@@ -189,7 +232,7 @@ INSERT IGNORE INTO site_settings (setting_key, setting_value) VALUES
 ('theme_ink', '#1E2C2B'),
 ('theme_surface', '#F6F3EA');
 
--- نمونه‌های مفهومی؛ نام و نقل‌قول‌های نمایشی را پیش از انتشار عمومی با موارد واقعی جایگزین کنید.
+-- پروژه‌های نمونه برای نمایش اولیه مفهومی‌اند؛ هیچ دیدگاه مشتریِ ساختگی seed نمی‌شود.
 INSERT INTO services (name, slug, tagline, description, icon, sort_order, is_published)
 SELECT 'استراتژی و مشاوره', 'strategy', 'اول، درست ببینیم.', 'شناخت بازار و مخاطب، جایگاه‌یابی برند و طراحی نقشه‌ای شفاف برای رشد.', 'compass', 1, 1 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM services WHERE slug = 'strategy');
 INSERT INTO services (name, slug, tagline, description, icon, sort_order, is_published)
@@ -206,13 +249,47 @@ SELECT 'نقش؛ خانه‌ای برای فرم‌های تازه', 'استود
 INSERT INTO projects (title, client, category, excerpt, description, image, visual_theme, metrics, sort_order, is_published)
 SELECT 'دُرنا؛ انرژی یک شروع نو', 'دُرنا', 'کمپین تبلیغاتی', 'کمپینی یکپارچه برای معرفی محصولی تازه به نسلی تازه.', '', '', 'coral', 'پروژه مفهومی', 3, 1 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM projects WHERE title = 'دُرنا؛ انرژی یک شروع نو');
 
-INSERT INTO testimonials (name, role, company, quote, sort_order, is_published)
-SELECT 'سارا امینی', 'مدیر برند', 'همراه پروژه ریشه', 'نگاه مدیا خیلی زود مسئله اصلی برند را فهمید. خروجی فقط زیبا نبود؛ تیم ما بالاخره زبان مشترکی برای معرفی محصول پیدا کرد.', 1, 1 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM testimonials WHERE name = 'سارا امینی' AND company = 'همراه پروژه ریشه');
-INSERT INTO testimonials (name, role, company, quote, sort_order, is_published)
-SELECT 'آرمان نیک‌پی', 'بنیان‌گذار', 'همراه پروژه نقش', 'از روز اول تا اجرا، حس کردیم یک تیم هم‌مسیر کنارمان است؛ دقیق، خوش‌فکر و متعهد به نتیجه.', 2, 1 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM testimonials WHERE name = 'آرمان نیک‌پی' AND company = 'همراه پروژه نقش');
-INSERT INTO testimonials (name, role, company, quote, sort_order, is_published)
-SELECT 'مهتاب یوسفی', 'مدیر بازاریابی', 'همراه پروژه دُرنا', 'کمپین با یک ایده ساده شروع شد و با برنامه‌ریزی دقیق به گفت‌وگویی واقعی با مخاطبان ما تبدیل شد.', 3, 1 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM testimonials WHERE name = 'مهتاب یوسفی' AND company = 'همراه پروژه دُرنا');
+-- Disable legacy demo quotations so only verified customer feedback is public.
+UPDATE testimonials SET is_published = 0 WHERE
+    (name = 'سارا امینی' AND company = 'همراه پروژه ریشه') OR
+    (name = 'آرمان نیک‌پی' AND company = 'همراه پروژه نقش') OR
+    (name = 'مهتاب یوسفی' AND company = 'همراه پروژه دُرنا');
 
 INSERT IGNORE INTO articles (title, slug, category, excerpt, body, image, published_at, is_published) VALUES
 ('چطور یک برند، صدای خودش را پیدا می‌کند؟', 'finding-brand-voice', 'برندینگ', 'لحن برند، فقط چند واژه در شبکه‌های اجتماعی نیست؛ تجربه‌ای‌ست که در تمام تماس‌ها شکل می‌گیرد.', 'لحن برند فقط چند واژه در شبکه‌های اجتماعی نیست؛ تجربه‌ای‌ست که در تمام تماس‌ها شکل می‌گیرد. از نخستین آگهی تا پاسخ پشتیبانی، صدای برند باید یک‌پارچه، صادقانه و متناسب با آدم‌هایی باشد که با آن حرف می‌زند.\n\nبرای پیدا کردن این صدا، از ارزش‌ها شروع کنید، مخاطب را خوب بشناسید و چند اصل ساده برای نوشتن و گفت‌وگو تعریف کنید. بعد، همان اصول را در تمام کانال‌ها تمرین و بازبینی کنید.', '', CURRENT_DATE, 1),
 ('کمپین خوب از پرسیدن سؤال درست شروع می‌شود', 'better-campaigns', 'استراتژی', 'پیش از انتخاب رسانه و فرمت، باید بدانیم قرار است چه چیزی در مخاطب تغییر کند.', 'پیش از انتخاب رسانه و فرمت، باید بدانیم قرار است چه چیزی در مخاطب تغییر کند. کمپین زمانی جهت پیدا می‌کند که یک مسئله روشن، یک مخاطب مشخص و یک هدف قابل سنجش داشته باشد.\n\nبا پرسیدن سؤال درست، ایده از حد یک تصویر جذاب فراتر می‌رود و به تجربه‌ای تبدیل می‌شود که مخاطب آن را می‌فهمد، به یاد می‌آورد و درباره‌اش حرف می‌زند.', '', CURRENT_DATE, 1);
+
+-- برندهای همکار اولیه؛ دیدگاه واقعی هر برند را از پنل ثبت کنید.
+INSERT IGNORE INTO brands (name, slug, logo, short_description, long_description, testimonial_quote, sort_order, is_published) VALUES
+('رنس تکس', 'rans-tex', '', '', '', '', 1, 1),
+('گالری طلاوجواهر محمود', 'mahmoud-jewelry', '', '', '', '', 2, 1),
+('رویان شبکه', 'royan-network', '', '', '', '', 3, 1),
+('الدراگ استور', 'aldrag-store', '', '', '', '', 4, 1),
+('دانشگاه شهید چمران اهواز', 'shahid-chamran-university', '', '', '', '', 5, 1),
+('وزارت علوم، تحقیقات و فناوری', 'ministry-science-research', '', '', '', '', 6, 1),
+('چمران پلاس', 'chamran-plus', '', '', '', '', 7, 1),
+('صداوسیما مرکز خوزستان', 'irib-khuzestan', '', '', '', '', 8, 1),
+('انجمن خیریه ۱۴ معصوم', 'charity-14-maasoom', '', '', '', '', 9, 1),
+('گالری نقره سیده راد', 'seyedarad-silver', '', '', '', '', 10, 1),
+('گالری جواهرات هم‌نفس', 'hamnafas-jewelry', '', '', '', '', 11, 1),
+('سازه‌های آبی شوشتر', 'shushtar-water-structures', '', '', '', '', 12, 1),
+('مجموعه نظریان', 'nazarian-group', '', '', '', '', 13, 1),
+('ابزارآلات قشقایی', 'ghashghai-tools', '', '', '', '', 14, 1),
+('شهرداری اهواز', 'ahvaz-municipality', '', '', '', '', 15, 1),
+('استانداری هرمزگان', 'hormozgan-governorate', '', '', '', '', 16, 1),
+('استانداری خوزستان', 'khuzestan-governorate', '', '', '', '', 17, 1),
+('کنسرت علیرضا قربانی', 'alireza-ghorbani-concert', '', '', '', '', 18, 1),
+('ارکستر سازهای ایرانی به یاد خالقی', 'khalaghi-iranian-orchestra', '', '', '', '', 19, 1),
+('جایزه ملی آهنگسازی استاد روح‌الله خالقی', 'khalaghi-composition-award', '', '', '', '', 20, 1),
+('خانه موسیقی تهران', 'tehran-music-house', '', '', '', '', 21, 1),
+('مشاوران افق دانش ثریا', 'ofogh-danesh-soraya', '', '', '', '', 22, 1),
+('مرکز رسانه استان خوزستان', 'khuzestan-media-center', '', '', '', '', 23, 1),
+('سازمان تبلیغات استان خوزستان', 'khuzestan-advertising-organization', '', '', '', '', 24, 1),
+('آژانس تبلیغاتی لامیلا', 'lamila-ad-agency', '', '', '', '', 25, 1),
+('مجموعه سرودهای استان خوزستان', 'khuzestan-choir-group', '', '', '', '', 26, 1),
+('مؤسسه برتینا', 'bertina-institute', '', '', '', '', 27, 1),
+('گروه موسیقی نی‌نوا', 'ney-nava-music-group', '', '', '', '', 28, 1),
+('دفتر امام جمعه اهواز', 'ahvaz-friday-office', '', '', '', '', 29, 1),
+('استودیو هور', 'studio-hoor', '', '', '', '', 30, 1),
+('کلینیک مشاوره کودک و نوجوان بهشت زندگی', 'behesht-zendegi-clinic', '', '', '', '', 31, 1),
+('طلا و جواهرات محمد سیاوشی', 'mohammad-siavashi-jewelry', '', '', '', '', 32, 1);

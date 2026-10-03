@@ -1,5 +1,6 @@
 # Local database credentials
 /app/config.local.php
+/app/installed.lock
 /.env
 /.env.*
 

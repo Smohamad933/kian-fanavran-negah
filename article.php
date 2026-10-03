@@ -30,6 +30,10 @@ $title = $article ? (string) $article['title'] : 'یادداشت پیدا نشد
 $primary = safe_color($settings['theme_primary'] ?? '', '#155C5A');
 $accent = safe_color($settings['theme_accent'] ?? '', '#BD5D43');
 $surface = safe_color($settings['theme_surface'] ?? '', '#F6F3EA');
+$customFontPath = safe_font_src($settings['custom_font_path'] ?? '');
+$customFontFormat = match (strtolower(pathinfo($customFontPath, PATHINFO_EXTENSION))) {
+    'woff2' => 'woff2', 'woff' => 'woff', 'ttf' => 'truetype', 'otf' => 'opentype', default => ''
+};
 ?>
 <!doctype html>
 <html lang="fa" dir="rtl">
@@ -40,7 +44,13 @@ $surface = safe_color($settings['theme_surface'] ?? '', '#F6F3EA');
     <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/site.css">
-    <style>:root{--teal:<?= e($primary) ?>;--clay:<?= e($accent) ?>;--paper:<?= e($surface) ?>;}</style>
+    <style>
+        :root{--teal:<?= e($primary) ?>;--clay:<?= e($accent) ?>;--paper:<?= e($surface) ?>;}
+        <?php if ($customFontPath !== ''): ?>
+        @font-face{font-family:'NegaahCustom';src:url('<?= e($customFontPath) ?>') format('<?= e($customFontFormat) ?>');font-weight:100 900;font-display:swap;}
+        :root{--font:'NegaahCustom','Vazirmatn',Tahoma,sans-serif;}
+        <?php endif; ?>
+    </style>
 </head>
 <body>
     <header class="site-header"><div class="container header-inner"><a class="brand" href="index.php"><span class="brand-symbol" aria-hidden="true"><svg viewBox="0 0 46 46" fill="none"><path d="M4 23C9.6 14.9 16 10.8 23 10.8S36.4 14.9 42 23c-5.6 8.1-12 12.2-19 12.2S9.6 31.1 4 23Z" stroke="currentColor" stroke-width="1.8"/><circle cx="23" cy="23" r="5.7" fill="currentColor"/></svg></span><span class="brand-wordmark"><strong><?= e($settings['brand_name']) ?></strong><small><?= e($settings['brand_descriptor']) ?></small></span></a><a class="header-contact" href="index.php#contact"><span>ارتباط با ما</span><?= icon_svg('arrow-left') ?></a></div></header>

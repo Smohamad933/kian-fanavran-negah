@@ -11,7 +11,7 @@ if ($pdo !== null) {
         $adminCount = (int) $pdo->query('SELECT COUNT(*) FROM admins')->fetchColumn();
         if ($adminCount > 0) redirect('login.php');
     } catch (Throwable $exception) {
-        $message = 'ساختار پایگاه داده هنوز نصب نشده است. ابتدا فایل database/schema.sql را در MySQL اجرا کنید.';
+        $message = 'ساختار پایگاه داده نصب نشده است. اگر اولین نصب است، ابتدا install.php را اجرا کنید؛ برای پایگاه دادهٔ موجود نیز database/schema.sql را در MySQL Import کنید.';
     }
 } else {
     $message = 'اتصال MySQL برقرار نیست. ابتدا اطلاعات app/config.local.php را تنظیم کنید.';
