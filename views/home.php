@@ -14,11 +14,20 @@ $customFontFormat = match (strtolower(pathinfo($customFontPath, PATHINFO_EXTENSI
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <base href="<?= e(seo_base_href($settings)) ?>">
     <meta name="theme-color" content="<?= e($surfaceColor) ?>">
     <meta name="description" content="<?= e($pageDescription) ?>">
+    <?php if ($siteVerification !== '' && preg_match('/^[A-Za-z0-9_-]{1,200}$/', $siteVerification)): ?><meta name="google-site-verification" content="<?= e($siteVerification) ?>"><?php endif; ?>
+    <?php if ($pageCanonical !== ''): ?><link rel="canonical" href="<?= e($pageCanonical) ?>"><meta property="og:url" content="<?= e($pageCanonical) ?>"><?php endif; ?>
+    <meta property="og:site_name" content="<?= e($settings['brand_name']) ?>">
     <meta property="og:title" content="<?= e($pageTitle) ?>">
     <meta property="og:description" content="<?= e($pageDescription) ?>">
     <meta property="og:type" content="website">
+    <?php if ($heroSocialImage !== ''): ?><meta property="og:image" content="<?= e($heroSocialImage) ?>"><meta name="twitter:card" content="summary_large_image"><?php else: ?><meta name="twitter:card" content="summary">
+    <?php endif; ?>
+    <meta name="twitter:title" content="<?= e($pageTitle) ?>">
+    <meta name="twitter:description" content="<?= e($pageDescription) ?>">
+    <?php if ($organizationSchema !== ''): ?><script type="application/ld+json"><?= $organizationSchema ?></script><?php endif; ?>
     <title><?= e($pageTitle) ?></title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

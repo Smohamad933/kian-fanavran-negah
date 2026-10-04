@@ -12,4 +12,8 @@ return [
     'max_upload_bytes' => 4 * 1024 * 1024,
     'max_video_upload_bytes' => 100 * 1024 * 1024,
     'max_font_upload_bytes' => 8 * 1024 * 1024,
+    'gsc_client_id' => '',
+    'gsc_client_secret' => '',
+    'gsc_token_encryption_key' => '',
+    'gsc_redirect_uri' => '',
 ];

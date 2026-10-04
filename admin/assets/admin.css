@@ -9,3 +9,48 @@
 .admin-toggle-setting input[type=checkbox]{width:16px;height:16px;margin:0;accent-color:var(--admin-teal)}
 .admin-toggle-setting small{color:#92998f;font-size:8px}
 .slide-preview-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(98px,1fr));gap:8px;grid-column:1/-1;padding:8px 0}.slide-preview-item{position:relative;display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0;padding:7px;border:1px solid var(--admin-line);background:#fffefa;transition:opacity .15s,box-shadow .15s}.slide-preview-item img{width:min(100%,82px);aspect-ratio:4/5;object-fit:cover;border:1px solid var(--admin-line)}.slide-preview-index{color:#78827b;font-size:8px}.slide-drag-handle{position:absolute;top:5px;left:5px;display:grid;place-items:center;width:25px;height:25px;border:1px solid rgba(30,44,43,.15);border-radius:3px;color:var(--admin-teal);background:rgba(255,254,250,.95);cursor:grab;font-size:15px;font-weight:700;line-height:1;touch-action:none;user-select:none}.slide-drag-handle:active{cursor:grabbing}.slide-drag-handle:focus-visible{outline:2px solid var(--admin-gold);outline-offset:2px}.slide-preview-item.is-dragging{z-index:2;opacity:.7;box-shadow:0 8px 20px rgba(30,44,43,.18);outline:2px dashed var(--admin-teal)}
+
+/* SEO setup, Google Search Console and keyword reporting */
+.seo-intro .content-intro-mark{font-size:44px;letter-spacing:-2px}
+.seo-status-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:0 0 15px}
+.seo-status-card{display:flex;min-width:0;flex-direction:column;gap:4px;padding:14px 15px;border:1px solid var(--admin-line);background:var(--admin-white)}
+.seo-status-card small{color:#8b948b;font-size:8px}
+.seo-status-card strong{font-size:11px;font-weight:700}
+.seo-status-card>span{overflow:hidden;color:#8a938b;font-size:8px;text-overflow:ellipsis;white-space:nowrap;direction:ltr;text-align:right}
+.seo-status-card.is-ready{border-top:2px solid #6e9a7a}
+.seo-status-card.is-ready strong{color:#397457}
+.seo-status-card.is-pending{border-top:2px solid var(--admin-gold)}
+.seo-status-card.is-pending strong{color:#80642e}
+.seo-card{margin-top:14px}
+.seo-step-number{display:grid;place-items:center;width:35px;height:35px;border:1px solid rgba(21,92,90,.2);border-radius:50%;color:var(--admin-teal);background:#f2f5ed;font-size:11px;font-weight:700}
+.seo-settings-form{display:grid;gap:14px}
+.seo-fields-grid .field-wide{grid-column:1/-1}
+.seo-fields-grid textarea{resize:vertical}
+.seo-explainer{margin:-4px 0 14px;color:#77837a;font-size:10px;line-height:2}
+.seo-config-example{margin:10px 0 0;padding:13px 15px;overflow:auto;border:1px solid var(--admin-line);color:#d7e4d7;background:#203331;font-size:10px;line-height:1.8;direction:ltr;text-align:left;white-space:pre}
+.seo-connection-row{display:flex;align-items:center;gap:10px;margin:10px 0}
+.seo-connection-row form{margin:0}
+.seo-callback-uri{display:block;max-width:100%;margin:7px 0 13px;padding:10px 12px;overflow-wrap:anywhere;border:1px solid var(--admin-line);color:#355b50;background:#f7f8f3;font-size:9px;text-align:left}
+.seo-connect-form,.seo-report-form{display:flex;align-items:center;flex-wrap:wrap;gap:9px 12px;margin-top:13px}
+.seo-connect-form small,.seo-report-form small{color:#8e978e;font-size:8px}
+.seo-property-form{display:flex;align-items:end;flex-wrap:wrap;gap:10px;margin-top:17px;padding-top:15px;border-top:1px solid var(--admin-line)}
+.seo-property-form .admin-field{width:min(500px,100%);flex:1 1 280px}
+.seo-report-form{margin:14px 0}
+.seo-report-heading{display:flex;align-items:end;justify-content:space-between;gap:12px;margin-top:18px;padding-top:15px;border-top:1px solid var(--admin-line)}
+.seo-report-heading h3{margin-top:4px;font-size:13px}
+.seo-report-heading>small{color:#92998f;font-size:8px}
+.seo-report-table{min-width:1000px}
+.seo-report-table td:nth-child(2){max-width:350px}
+.seo-result-url{display:block;max-width:330px;overflow:hidden;color:#557b70;font-size:8px;text-overflow:ellipsis;white-space:nowrap}
+.seo-report-note{margin-top:10px;line-height:1.9}
+.seo-url-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:14px}
+.seo-url-card{display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0;padding:13px 15px;border:1px solid var(--admin-line);background:var(--admin-white);transition:border-color .2s,transform .2s}
+.seo-url-card:hover{transform:translateY(-2px);border-color:rgba(21,92,90,.38)}
+.seo-url-card>span{display:grid;min-width:0;gap:3px}
+.seo-url-card small{color:#92998f;font-size:8px}
+.seo-url-card strong{overflow:hidden;color:var(--admin-teal);font-size:9px;text-overflow:ellipsis;white-space:nowrap;direction:ltr;text-align:right}
+.seo-url-card svg{flex:0 0 15px;color:var(--admin-teal)}
+@media(max-width:900px){.seo-status-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.seo-status-grid{grid-template-columns:1fr 1fr;gap:7px}.seo-status-card{padding:11px}.seo-url-cards{grid-template-columns:1fr}.seo-fields-grid{grid-template-columns:minmax(0,1fr)}.seo-fields-grid .field-wide{grid-column:auto}.seo-report-heading{align-items:start;flex-direction:column}.seo-connection-row{align-items:start;flex-direction:column}.seo-connect-form,.seo-report-form{align-items:stretch;flex-direction:column}.seo-connect-form .admin-button,.seo-report-form .admin-button{width:100%}}
+.seo-incomplete-links{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:-4px 0 15px}.seo-incomplete-links>a{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0;padding:11px 13px;border:1px solid var(--admin-line);background:var(--admin-white);transition:border-color .2s}.seo-incomplete-links>a:hover{border-color:rgba(21,92,90,.38)}.seo-incomplete-links>a>span{display:grid;min-width:0;gap:3px}.seo-incomplete-links small{color:#92998f;font-size:8px}.seo-incomplete-links strong{color:#596a5f;font-size:9px;font-weight:600;line-height:1.8}.seo-incomplete-links svg{flex:0 0 14px;color:var(--admin-teal)}
+@media(max-width:560px){.seo-incomplete-links{grid-template-columns:minmax(0,1fr)}}

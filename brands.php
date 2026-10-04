@@ -6,6 +6,9 @@ require_once __DIR__ . '/app/bootstrap.php';
 $data = load_site_data($pdo);
 $brands = array_values(array_filter($data['brands'], static fn(array $brand): bool => !empty($brand['is_published'])));
 $settings = $data['settings'];
+$directoryTitle = 'همهٔ برندهای همکار | ' . (string) $settings['brand_name'];
+$directoryDescription = 'فهرست برندهای منتشرشده و صفحهٔ معرفی و آرشیو هرکدام در ' . (string) $settings['brand_name'] . '.';
+$canonicalUrl = seo_absolute_url($settings, 'brands');
 $footerCreditUrl = safe_href($settings['footer_credit_url'] ?? '', '');
 $primary = safe_color($settings['theme_primary'] ?? '', '#155C5A');
 $accent = safe_color($settings['theme_accent'] ?? '', '#BD5D43');
@@ -20,9 +23,12 @@ $customFontFormat = match (strtolower(pathinfo($customFontPath, PATHINFO_EXTENSI
 <html lang="fa" dir="rtl">
 <head>
     <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="فهرست برندهای همکار نگاه مدیا و پیش‌نمایشی از روایت هر برند.">
+    <base href="<?= e(seo_base_href($settings)) ?>">
+    <meta name="description" content="<?= e($directoryDescription) ?>">
     <meta name="theme-color" content="<?= e($surface) ?>">
-    <title>همهٔ برندهای همکار | <?= e($settings['brand_name']) ?></title>
+    <?php if ($canonicalUrl !== ''): ?><link rel="canonical" href="<?= e($canonicalUrl) ?>"><meta property="og:url" content="<?= e($canonicalUrl) ?>"><?php endif; ?>
+    <meta property="og:type" content="website"><meta property="og:site_name" content="<?= e($settings['brand_name']) ?>"><meta property="og:title" content="<?= e($directoryTitle) ?>"><meta property="og:description" content="<?= e($directoryDescription) ?>"><meta name="twitter:card" content="summary">
+    <title><?= e($directoryTitle) ?></title>
     <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/site.css">

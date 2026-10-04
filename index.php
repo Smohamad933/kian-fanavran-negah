@@ -48,8 +48,19 @@ $accentColor = safe_color($settings['theme_accent'] ?? '', '#BD5D43');
 $saffronColor = safe_color($settings['theme_saffron'] ?? '', '#D7A84A');
 $inkColor = safe_color($settings['theme_ink'] ?? '', '#1E2C2B');
 $surfaceColor = safe_color($settings['theme_surface'] ?? '', '#F6F3EA');
-$pageTitle = ($settings['brand_name'] ?? 'نگاه مدیا') . ' | استودیو خلاقیت و رشد';
-$pageDescription = $settings['hero_description'] ?? 'استراتژی، خلاقیت و بازاریابی برای رشد برندهای ایرانی.';
+$pageTitle = trim((string) ($settings['seo_home_title'] ?? '')) ?: (($settings['brand_name'] ?? 'نگاه مدیا') . ' | استودیو خلاقیت و رشد');
+$pageDescription = trim((string) ($settings['seo_home_description'] ?? '')) ?: ($settings['hero_description'] ?? 'استراتژی، خلاقیت و بازاریابی برای رشد برندهای ایرانی.');
+$pageCanonical = seo_absolute_url($settings);
+$siteVerification = trim((string) ($settings['google_site_verification'] ?? ''));
+$heroSocialImage = safe_image_src($settings['hero_image'] ?? '', '');
+if ($heroSocialImage !== '' && !preg_match('/^https:\/\//i', $heroSocialImage)) $heroSocialImage = seo_absolute_url($settings, $heroSocialImage);
+$organizationSchema = $pageCanonical !== '' ? json_encode([
+    '@context' => 'https://schema.org',
+    '@type' => 'Organization',
+    'name' => (string) ($settings['brand_name'] ?? 'نگاه مدیا'),
+    'url' => $pageCanonical,
+    'description' => $pageDescription,
+], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) : '';
 
 define('SITE_RENDER', true);
 require __DIR__ . '/views/home.php';

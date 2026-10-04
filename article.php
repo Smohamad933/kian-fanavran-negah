@@ -24,10 +24,29 @@ if ($article === null) {
 if ($article === null) http_response_code(404);
 $settings = $data['settings'];
 $footerCreditUrl = safe_href($settings['footer_credit_url'] ?? '', '');
+$title = $article ? (string) $article['title'] : 'یادداشت پیدا نشد';
 $articleImage = safe_image_src($article['image'] ?? '', '');
+$seoTitle = trim((string) ($article['seo_title'] ?? '')) ?: ($title . ' | ' . (string) $settings['brand_name']);
+$seoDescription = trim((string) ($article['seo_description'] ?? '')) ?: (string) ($article['excerpt'] ?? 'یادداشت‌های نگاه مدیا درباره برند و تبلیغات.');
+$canonicalUrl = $article ? seo_absolute_url($settings, 'article/' . rawurlencode((string) $article['slug'])) : '';
+$shareImage = $articleImage;
+if ($shareImage !== '' && !preg_match('/^https:\/\//i', $shareImage)) $shareImage = seo_absolute_url($settings, $shareImage);
+$articleSchema = '';
+if ($article && $canonicalUrl !== '') {
+    $schema = [
+        '@context' => 'https://schema.org',
+        '@type' => 'Article',
+        'headline' => $title,
+        'description' => $seoDescription,
+        'mainEntityOfPage' => $canonicalUrl,
+        'publisher' => ['@type' => 'Organization', 'name' => (string) $settings['brand_name']],
+    ];
+    if ($shareImage !== '') $schema['image'] = [$shareImage];
+    if (!empty($article['published_at'])) $schema['datePublished'] = (string) $article['published_at'];
+    $articleSchema = json_encode($schema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?: '';
+}
 $bodyText = trim((string) ($article['body'] ?? ''));
 $paragraphs = preg_split('/\R\s*\R/u', $bodyText) ?: [];
-$title = $article ? (string) $article['title'] : 'یادداشت پیدا نشد';
 $primary = safe_color($settings['theme_primary'] ?? '', '#155C5A');
 $accent = safe_color($settings['theme_accent'] ?? '', '#BD5D43');
 $surface = safe_color($settings['theme_surface'] ?? '', '#F6F3EA');
@@ -40,8 +59,17 @@ $customFontFormat = match (strtolower(pathinfo($customFontPath, PATHINFO_EXTENSI
 <html lang="fa" dir="rtl">
 <head>
     <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="<?= e($article['excerpt'] ?? 'یادداشت‌های نگاه مدیا درباره برند و تبلیغات.') ?>">
-    <title><?= e($title) ?> | <?= e($settings['brand_name']) ?></title>
+    <base href="<?= e(seo_base_href($settings)) ?>">
+    <meta name="description" content="<?= e($seoDescription) ?>">
+    <?php if ($article): ?><link rel="canonical" href="<?= e($canonicalUrl) ?>"><meta property="og:url" content="<?= e($canonicalUrl) ?>"><meta property="og:type" content="article"><?php else: ?><meta name="robots" content="noindex,follow"><?php endif; ?>
+    <meta property="og:site_name" content="<?= e($settings['brand_name']) ?>">
+    <meta property="og:title" content="<?= e($seoTitle) ?>">
+    <meta property="og:description" content="<?= e($seoDescription) ?>">
+    <?php if ($shareImage !== ''): ?><meta property="og:image" content="<?= e($shareImage) ?>"><meta name="twitter:card" content="summary_large_image"><?php else: ?><meta name="twitter:card" content="summary"><?php endif; ?>
+    <meta name="twitter:title" content="<?= e($seoTitle) ?>"><meta name="twitter:description" content="<?= e($seoDescription) ?>">
+    <?php if ($article && !empty($article['published_at'])): ?><meta property="article:published_time" content="<?= e((string) $article['published_at']) ?>"><?php endif; ?>
+    <?php if ($articleSchema !== ''): ?><script type="application/ld+json"><?= $articleSchema ?></script><?php endif; ?>
+    <title><?= e($seoTitle) ?></title>
     <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/site.css">

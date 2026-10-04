@@ -71,6 +71,9 @@ CREATE TABLE IF NOT EXISTS articles (
     excerpt TEXT NOT NULL,
     body MEDIUMTEXT NOT NULL,
     image VARCHAR(500) NOT NULL DEFAULT '',
+    seo_title VARCHAR(180) NOT NULL DEFAULT '',
+    seo_description VARCHAR(320) NOT NULL DEFAULT '',
+    focus_keywords VARCHAR(1000) NOT NULL DEFAULT '',
     published_at DATE NULL,
     sort_order INT NOT NULL DEFAULT 0,
     is_published TINYINT(1) NOT NULL DEFAULT 1,
@@ -81,12 +84,32 @@ CREATE TABLE IF NOT EXISTS articles (
     KEY idx_articles_public_date (is_published, published_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Add editable SEO metadata to existing article tables without replacing content.
+SET @article_seo_title_exists = (SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'articles' AND column_name = 'seo_title');
+SET @article_seo_title_sql = IF(@article_seo_title_exists = 0, 'ALTER TABLE articles ADD COLUMN seo_title VARCHAR(180) NOT NULL DEFAULT '''' AFTER image', 'SET @article_seo_title_noop = 1');
+PREPARE article_seo_title_stmt FROM @article_seo_title_sql;
+EXECUTE article_seo_title_stmt;
+DEALLOCATE PREPARE article_seo_title_stmt;
+SET @article_seo_description_exists = (SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'articles' AND column_name = 'seo_description');
+SET @article_seo_description_sql = IF(@article_seo_description_exists = 0, 'ALTER TABLE articles ADD COLUMN seo_description VARCHAR(320) NOT NULL DEFAULT '''' AFTER seo_title', 'SET @article_seo_description_noop = 1');
+PREPARE article_seo_description_stmt FROM @article_seo_description_sql;
+EXECUTE article_seo_description_stmt;
+DEALLOCATE PREPARE article_seo_description_stmt;
+SET @article_focus_keywords_exists = (SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'articles' AND column_name = 'focus_keywords');
+SET @article_focus_keywords_sql = IF(@article_focus_keywords_exists = 0, 'ALTER TABLE articles ADD COLUMN focus_keywords VARCHAR(1000) NOT NULL DEFAULT '''' AFTER seo_description', 'SET @article_focus_keywords_noop = 1');
+PREPARE article_focus_keywords_stmt FROM @article_focus_keywords_sql;
+EXECUTE article_focus_keywords_stmt;
+DEALLOCATE PREPARE article_focus_keywords_stmt;
+
 CREATE TABLE IF NOT EXISTS brands (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     name VARCHAR(220) NOT NULL,
     slug VARCHAR(220) NOT NULL,
     logo VARCHAR(500) NOT NULL DEFAULT '',
     preview_image VARCHAR(500) NOT NULL DEFAULT '',
+    seo_title VARCHAR(180) NOT NULL DEFAULT '',
+    seo_description VARCHAR(320) NOT NULL DEFAULT '',
+    focus_keywords VARCHAR(1000) NOT NULL DEFAULT '',
     short_description TEXT NOT NULL,
     long_description MEDIUMTEXT NOT NULL,
     testimonial_quote TEXT NOT NULL,
@@ -115,6 +138,23 @@ SET @brand_preview_column_sql = IF(@brand_preview_column_exists = 0, 'ALTER TABL
 PREPARE brand_preview_column_stmt FROM @brand_preview_column_sql;
 EXECUTE brand_preview_column_stmt;
 DEALLOCATE PREPARE brand_preview_column_stmt;
+
+-- Add editable SEO metadata to existing brand tables without changing published content.
+SET @brand_seo_title_exists = (SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'brands' AND column_name = 'seo_title');
+SET @brand_seo_title_sql = IF(@brand_seo_title_exists = 0, 'ALTER TABLE brands ADD COLUMN seo_title VARCHAR(180) NOT NULL DEFAULT '''' AFTER preview_image', 'SET @brand_seo_title_noop = 1');
+PREPARE brand_seo_title_stmt FROM @brand_seo_title_sql;
+EXECUTE brand_seo_title_stmt;
+DEALLOCATE PREPARE brand_seo_title_stmt;
+SET @brand_seo_description_exists = (SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'brands' AND column_name = 'seo_description');
+SET @brand_seo_description_sql = IF(@brand_seo_description_exists = 0, 'ALTER TABLE brands ADD COLUMN seo_description VARCHAR(320) NOT NULL DEFAULT '''' AFTER seo_title', 'SET @brand_seo_description_noop = 1');
+PREPARE brand_seo_description_stmt FROM @brand_seo_description_sql;
+EXECUTE brand_seo_description_stmt;
+DEALLOCATE PREPARE brand_seo_description_stmt;
+SET @brand_focus_keywords_exists = (SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'brands' AND column_name = 'focus_keywords');
+SET @brand_focus_keywords_sql = IF(@brand_focus_keywords_exists = 0, 'ALTER TABLE brands ADD COLUMN focus_keywords VARCHAR(1000) NOT NULL DEFAULT '''' AFTER seo_description', 'SET @brand_focus_keywords_noop = 1');
+PREPARE brand_focus_keywords_stmt FROM @brand_focus_keywords_sql;
+EXECUTE brand_focus_keywords_stmt;
+DEALLOCATE PREPARE brand_focus_keywords_stmt;
 
 CREATE TABLE IF NOT EXISTS brand_media (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT,

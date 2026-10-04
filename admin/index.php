@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 require_once dirname(__DIR__) . '/app/bootstrap.php';
+require_once dirname(__DIR__) . '/app/search_console.php';
 
 if ($pdo === null) redirect('login.php');
 try {
@@ -67,6 +68,9 @@ function admin_entities(PDO $pdo): array
                 'body' => ['label' => 'متن یادداشت', 'type' => 'textarea', 'hint' => 'متن ساده؛ برای جدا کردن بندها یک خط خالی بگذارید.'],
                 'image' => ['label' => 'تصویر یادداشت', 'type' => 'image', 'hint' => 'تصویر شاخص، حداکثر ۴ مگابایت.'],
                 'published_at' => ['label' => 'تاریخ انتشار', 'type' => 'date'],
+                'seo_title' => ['label' => 'عنوان سئو', 'type' => 'text', 'max' => 180, 'hint' => 'اختیاری؛ اگر خالی باشد از عنوان یادداشت استفاده می‌شود.'],
+                'seo_description' => ['label' => 'توضیحات نتیجهٔ جست‌وجو', 'type' => 'textarea', 'max' => 320, 'hint' => 'یک خلاصهٔ طبیعی و یکتا بنویسید؛ حدود ۱۲۰ تا ۱۶۰ نویسه.'],
+                'focus_keywords' => ['label' => 'عبارت‌های هدف (هر خط یک عبارت)', 'type' => 'textarea', 'max' => 1000, 'hint' => 'برای راهنمای نگارش و گزارش Search Console؛ این عبارت‌ها به‌صورت متای بی‌اثر منتشر نمی‌شوند.'],
             ],
         ],
         'brands' => [
@@ -81,6 +85,9 @@ function admin_entities(PDO $pdo): array
                 'testimonial_quote' => ['label' => 'نظر کارفرما (با تأیید ایشان)', 'type' => 'textarea', 'hint' => 'برای رعایت امانت، فقط نقل‌قول واقعی و مورد تأیید برند را منتشر کنید.'],
                 'testimonial_author' => ['label' => 'نام گویندهٔ نظر', 'type' => 'text'],
                 'testimonial_role' => ['label' => 'سمت یا عنوان گوینده', 'type' => 'text'],
+                'seo_title' => ['label' => 'عنوان سئو', 'type' => 'text', 'max' => 180, 'hint' => 'اختیاری؛ در حالت خالی نام برند استفاده می‌شود.'],
+                'seo_description' => ['label' => 'توضیحات نتیجهٔ جست‌وجو', 'type' => 'textarea', 'max' => 320, 'hint' => 'خلاصه‌ای کوتاه، یکتا و مرتبط با همین صفحه بنویسید.'],
+                'focus_keywords' => ['label' => 'عبارت‌های هدف (هر خط یک عبارت)', 'type' => 'textarea', 'max' => 1000, 'hint' => 'عبارت‌های اصلی این صفحه را برای راهنمای محتوا ثبت کنید؛ این‌ها متای keywords نیستند.'],
             ],
         ],
         'brand_media' => [
@@ -109,7 +116,7 @@ function limit_admin_text(string $value, int $limit = 10000): string
 }
 
 $entities = admin_entities($pdo);
-$validPages = ['dashboard', 'content', 'services', 'projects', 'testimonials', 'articles', 'brands', 'brand_media', 'inquiries', 'account'];
+$validPages = ['dashboard', 'content', 'seo', 'services', 'projects', 'testimonials', 'articles', 'brands', 'brand_media', 'inquiries', 'account'];
 $page = (string) ($_GET['page'] ?? 'dashboard');
 if (!in_array($page, $validPages, true)) $page = 'dashboard';
 $errors = [];
@@ -121,6 +128,75 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!in_array($returnPage, $validPages, true)) $returnPage = 'dashboard';
 
     try {
+        if ($action === 'save_seo') {
+            $rawSiteUrl = trim((string) ($_POST['seo_site_url'] ?? ''));
+            $siteUrl = $rawSiteUrl === '' ? '' : seo_normalize_site_url($rawSiteUrl);
+            if ($rawSiteUrl !== '' && $siteUrl === '') throw new RuntimeException('نشانی سایت باید یک URL کامل HTTPS معتبر مثل https://example.com باشد؛ بدون مسیر فایل یا پارامتر.');
+            $verification = trim((string) ($_POST['google_site_verification'] ?? ''));
+            if ($verification !== '' && !preg_match('/^[A-Za-z0-9_-]{1,200}$/', $verification)) {
+                throw new RuntimeException('فقط مقدار content از متای تأیید گوگل را وارد کنید؛ خود تگ HTML را نچسبانید.');
+            }
+            $seoValues = [
+                'seo_site_url' => $siteUrl,
+                'seo_home_title' => limit_admin_text(trim((string) ($_POST['seo_home_title'] ?? '')), 180),
+                'seo_home_description' => limit_admin_text(trim((string) ($_POST['seo_home_description'] ?? '')), 320),
+                'seo_home_keywords' => limit_admin_text(trim((string) ($_POST['seo_home_keywords'] ?? '')), 1000),
+                'google_site_verification' => $verification,
+            ];
+            foreach ($seoValues as $key => $value) gsc_setting($pdo, $key, $value);
+            set_flash('success', 'تنظیمات پایهٔ سئو ذخیره شد. نشانی canonical و sitemap از این پس بر پایهٔ دامنهٔ واردشده ساخته می‌شوند.');
+            redirect('index.php?page=seo');
+        }
+
+        if ($action === 'connect_search_console') {
+            if (!gsc_is_configured()) throw new RuntimeException('برای اتصال، Client ID، Client Secret و کلید رمزگذاری را در app/config.local.php تنظیم کنید.');
+            $siteUrl = gsc_read_setting($pdo, 'seo_site_url');
+            $redirectUri = gsc_redirect_uri($siteUrl);
+            if ($redirectUri === '') throw new RuntimeException('ابتدا نشانی HTTPS سایت را در تنظیمات سئو ذخیره کنید؛ نشانی بازگشت برای Google OAuth از همان ساخته می‌شود.');
+            $state = bin2hex(random_bytes(32));
+            $_SESSION['_gsc_oauth_state'] = $state;
+            redirect(gsc_authorization_url($state, $redirectUri));
+        }
+
+        if ($action === 'disconnect_search_console') {
+            gsc_revoke_and_remove_token($pdo);
+            gsc_setting($pdo, 'gsc_property_url', '');
+            unset($_SESSION['gsc_report'], $_SESSION['_gsc_oauth_state']);
+            set_flash('success', 'اتصال Search Console از پنل قطع شد.');
+            redirect('index.php?page=seo');
+        }
+
+        if ($action === 'save_gsc_property') {
+            $selectedProperty = trim((string) ($_POST['gsc_property_url'] ?? ''));
+            $availableSites = gsc_list_sites($pdo);
+            $isAvailable = false;
+            foreach ($availableSites as $availableSite) {
+                if (($availableSite['siteUrl'] ?? '') === $selectedProperty) $isAvailable = true;
+            }
+            if (!$isAvailable) throw new RuntimeException('این ویژگی در فهرست حساب متصل‌شده پیدا نشد؛ دوباره فهرست را بارگذاری کنید.');
+            gsc_setting($pdo, 'gsc_property_url', $selectedProperty);
+            unset($_SESSION['gsc_report']);
+            set_flash('success', 'ویژگی Search Console انتخاب شد.');
+            redirect('index.php?page=seo');
+        }
+
+        if ($action === 'fetch_gsc_report') {
+            $selectedProperty = gsc_read_setting($pdo, 'gsc_property_url');
+            if ($selectedProperty === '') throw new RuntimeException('ابتدا از فهرست، ویژگی Search Console سایت را انتخاب کنید.');
+            $availableSites = gsc_list_sites($pdo);
+            $isAvailable = false;
+            foreach ($availableSites as $availableSite) {
+                if (($availableSite['siteUrl'] ?? '') === $selectedProperty) $isAvailable = true;
+            }
+            if (!$isAvailable) throw new RuntimeException('حساب Google دیگر به ویژگی ذخیره‌شده دسترسی ندارد؛ ویژگی را دوباره انتخاب کنید.');
+            $endDate = date('Y-m-d', strtotime('-3 days'));
+            $startDate = date('Y-m-d', strtotime('-30 days'));
+            $rows = gsc_search_analytics($pdo, $selectedProperty, $startDate, $endDate);
+            $_SESSION['gsc_report'] = ['property' => $selectedProperty, 'rows' => $rows, 'start' => $startDate, 'end' => $endDate, 'fetched_at' => time()];
+            set_flash('success', 'گزارش جست‌وجو از Search Console دریافت شد.');
+            redirect('index.php?page=seo');
+        }
+
         if ($action === 'save_content') {
             $defaults = default_settings();
             $upsert = $pdo->prepare('INSERT INTO site_settings (setting_key, setting_value) VALUES (:setting_key, :setting_value) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)');
@@ -229,7 +305,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $date = DateTime::createFromFormat('Y-m-d', $value);
                     if (!$date || $date->format('Y-m-d') !== $value) $validationErrors[] = 'تاریخ انتشار معتبر نیست.';
                 }
-                $values[$column] = $field['type'] === 'textarea' ? limit_admin_text($value, 12000) : limit_admin_text($value, 500);
+                $fieldLimit = (int) ($field['max'] ?? ($field['type'] === 'textarea' ? 12000 : ($field['type'] === 'slug' ? 220 : 500)));
+                $values[$column] = limit_admin_text($value, $fieldLimit);
             }
 
             if ($entity === 'brand_media' && $id > 0 && $uploadedSlides === [] && $uploadedMedia === null && array_key_exists('slides_order', $_POST)) {
@@ -432,8 +509,38 @@ try {
     }
 } catch (Throwable $exception) {}
 
+$seoSiteUrl = seo_normalize_site_url($settings['seo_site_url'] ?? '');
+$seoSitemapUrl = $seoSiteUrl !== '' ? seo_absolute_url($settings, 'sitemap.xml') : '';
+$seoRobotsUrl = $seoSiteUrl !== '' ? seo_absolute_url($settings, 'robots.txt') : '';
+$gscConfigured = gsc_is_configured();
+$gscConnected = false;
+$gscSites = [];
+$gscError = '';
+$gscRedirectUri = gsc_redirect_uri((string) ($settings['seo_site_url'] ?? ''));
+$selectedGscProperty = (string) ($settings['gsc_property_url'] ?? '');
+$gscReport = $_SESSION['gsc_report'] ?? null;
+$seoMissingMetadata = ['articles' => null, 'brands' => null];
+if ($page === 'seo') {
+    try {
+        $seoMissingMetadata['articles'] = (int) $pdo->query("SELECT COUNT(*) FROM articles WHERE is_published = 1 AND (TRIM(seo_title) = '' OR TRIM(seo_description) = '')")->fetchColumn();
+        $seoMissingMetadata['brands'] = (int) $pdo->query("SELECT COUNT(*) FROM brands WHERE is_published = 1 AND (TRIM(seo_title) = '' OR TRIM(seo_description) = '')")->fetchColumn();
+    } catch (Throwable $exception) {}
+}
+if (is_array($gscReport) && ($gscReport['property'] ?? '') !== $selectedGscProperty) $gscReport = null;
+if ($page === 'seo' && $gscConfigured) {
+    try {
+        $storedGscToken = gsc_read_token($pdo);
+        if ($storedGscToken !== null) {
+            $gscConnected = true;
+            $gscSites = gsc_list_sites($pdo);
+        }
+    } catch (Throwable $exception) {
+        $gscError = $exception->getMessage();
+    }
+}
+
 $pageTitles = [
-    'dashboard' => 'نمای کلی', 'content' => 'محتوای صفحهٔ اصلی', 'services' => 'مدیریت خدمات',
+    'dashboard' => 'نمای کلی', 'content' => 'محتوای صفحهٔ اصلی', 'seo' => 'سئو و گوگل', 'services' => 'مدیریت خدمات',
     'projects' => 'مدیریت نمونه‌کارها', 'testimonials' => 'دیدگاه همراهان', 'articles' => 'دفترچه نگاه',
     'brands' => 'برندهای همکار', 'brand_media' => 'آرشیو رسانهٔ برندها',
     'inquiries' => 'درخواست‌های تماس', 'account' => 'حساب‌های مدیران',
@@ -443,6 +550,7 @@ $inquiryCount = (int) $pdo->query("SELECT COUNT(*) FROM inquiries WHERE status =
 $navItems = [
     'dashboard' => ['نمای کلی', 'compass'],
     'content' => ['محتوای سایت', 'spark'],
+    'seo' => ['سئو و گوگل', 'chart'],
     'services' => ['خدمات', 'compass'],
     'projects' => ['نمونه‌کارها', 'chart'],
     'testimonials' => ['دیدگاه‌ها', 'quote'],
@@ -492,9 +600,10 @@ function render_admin_field(string $column, array $field, array $item, array $sl
     $required = !empty($field['required']) ? ' required' : '';
     $hint = !empty($field['hint']) ? '<small class="field-hint">' . e($field['hint']) . '</small>' : '';
     $wrapperTag = $field['type'] === 'media' ? 'div' : 'label';
+    $maxLength = (int) ($field['max'] ?? ($field['type'] === 'textarea' ? 12000 : ($field['type'] === 'slug' ? 220 : 500)));
     echo '<' . $wrapperTag . ' class="admin-field"><span>' . e($field['label']) . (!empty($field['required']) ? ' <b>*</b>' : '') . '</span>';
     if ($field['type'] === 'textarea') {
-        echo '<textarea name="' . e($column) . '" rows="5"' . $required . '>' . e($value) . '</textarea>';
+        echo '<textarea name="' . e($column) . '" rows="' . e((string) ($field['rows'] ?? 5)) . '" maxlength="' . e((string) $maxLength) . '"' . $required . '>' . e($value) . '</textarea>';
     } elseif (in_array($field['type'], ['select', 'brand_select'], true)) {
         echo '<select name="' . e($column) . '">';
         foreach ($field['options'] as $optionValue => $optionLabel) {
@@ -531,7 +640,7 @@ function render_admin_field(string $column, array $field, array $item, array $sl
     } else {
         $type = match ($field['type']) { 'date' => 'date', 'slug' => 'text', default => 'text' };
         $dir = $field['type'] === 'slug' ? ' dir="ltr" class="ltr-input"' : '';
-        echo '<input type="' . $type . '" name="' . e($column) . '" value="' . e($value) . '"' . $dir . $required . ' maxlength="' . ($field['type'] === 'slug' ? '220' : '500') . '">';
+        echo '<input type="' . $type . '" name="' . e($column) . '" value="' . e($value) . '"' . $dir . $required . ' maxlength="' . e((string) $maxLength) . '">';
     }
     echo $hint . '</' . $wrapperTag . '>';
 }
@@ -580,7 +689,7 @@ function render_admin_field(string $column, array $field, array $item, array $sl
                         <?php if ($recentInquiries === []): ?><div class="empty-state"><span>✳</span><strong>هنوز پیامی ندارید</strong><p>پیام‌های فرم تماس سایت، اینجا نمایش داده می‌شوند.</p></div>
                         <?php else: ?><div class="recent-list"><?php foreach ($recentInquiries as $inquiry): ?><a href="index.php?page=inquiries" class="recent-row"><span class="recent-dot <?= e($inquiry['status']) ?>"></span><span class="recent-name"><strong><?= e($inquiry['name']) ?></strong><small><?= e($inquiry['subject'] ?: 'درخواست مشاوره') ?></small></span><span class="recent-phone" dir="ltr"><?= e($inquiry['phone']) ?></span><span class="recent-date"><?= e(date('Y/m/d', strtotime((string) $inquiry['created_at']))) ?></span><?= icon_svg('arrow-left') ?></a><?php endforeach; ?></div><?php endif; ?>
                     </section>
-                    <section class="admin-card quick-card"><div class="admin-card-heading"><div><span class="admin-kicker">دسترسی سریع</span><h2>از کجا شروع کنیم؟</h2></div></div><div class="quick-links"><a href="index.php?page=content"><span class="quick-icon">✳</span><span><strong>ویرایش صفحهٔ اصلی</strong><small>تیترها، رنگ‌ها و اطلاعات برند</small></span><?= icon_svg('arrow-left') ?></a><a href="index.php?page=projects&action=new"><span class="quick-icon">↗</span><span><strong>افزودن نمونه‌کار</strong><small>یک روایت تازه به ویترین اضافه کنید</small></span><?= icon_svg('arrow-left') ?></a><a href="index.php?page=articles&action=new"><span class="quick-icon">✎</span><span><strong>نوشتن یادداشت</strong><small>فکرهای تازه‌تان را منتشر کنید</small></span><?= icon_svg('arrow-left') ?></a></div></section>
+                    <section class="admin-card quick-card"><div class="admin-card-heading"><div><span class="admin-kicker">دسترسی سریع</span><h2>از کجا شروع کنیم؟</h2></div></div><div class="quick-links"><a href="index.php?page=content"><span class="quick-icon">✳</span><span><strong>ویرایش صفحهٔ اصلی</strong><small>تیترها، رنگ‌ها و اطلاعات برند</small></span><?= icon_svg('arrow-left') ?></a><a href="index.php?page=projects&action=new"><span class="quick-icon">↗</span><span><strong>افزودن نمونه‌کار</strong><small>یک روایت تازه به ویترین اضافه کنید</small></span><?= icon_svg('arrow-left') ?></a><a href="index.php?page=articles&action=new"><span class="quick-icon">✎</span><span><strong>نوشتن یادداشت</strong><small>فکرهای تازه‌تان را منتشر کنید</small></span><?= icon_svg('arrow-left') ?></a><a href="index.php?page=seo"><span class="quick-icon">◎</span><span><strong>بررسی سئو و Google</strong><small>دامنه، توضیحات و گزارش جست‌وجو</small></span><?= icon_svg('arrow-left') ?></a></div></section>
                 </div>
                 <div class="admin-note"><span>!</span><p><strong>پیش از انتشار:</strong> نمونه‌کارهای اولیه مفهومی‌اند. دیدگاه مشتری را فقط با متن واقعی و اجازهٔ انتشار وارد کنید؛ دیدگاه‌های نمایشی قدیمی در سایت عمومی پنهان شده‌اند.</p></div>
 
@@ -611,6 +720,67 @@ function render_admin_field(string $column, array $field, array $item, array $sl
                     <?php endforeach; ?>
                     <div class="sticky-save"><span>تغییرها تا زمان ذخیره در سایت اعمال نمی‌شوند.</span><button class="admin-button admin-button-primary" type="submit">ذخیرهٔ تغییرات <?= icon_svg('check') ?></button></div>
                 </form>
+
+            <?php elseif ($page === 'seo'): ?>
+                <div class="content-intro seo-intro"><div><span class="admin-kicker">راهنمای رشد در جست‌وجو</span><h2>سئو را با چند تنظیم روشن شروع کنید.</h2><p>دامنه، توضیحات یکتا و عبارت‌های هدف را ثبت کنید؛ سپس Search Console را فقط‌خواندنی متصل کنید تا عبارت‌ها، کلیک‌ها و جایگاه میانگین را از دادهٔ واقعی ببینید.</p></div><span class="content-intro-mark">SEO</span></div>
+                <div class="seo-status-grid">
+                    <div class="seo-status-card <?= $seoSiteUrl !== '' ? 'is-ready' : 'is-pending' ?>"><small>دامنهٔ canonical</small><strong><?= $seoSiteUrl !== '' ? 'تنظیم شده' : 'نیاز به تنظیم' ?></strong><span><?= $seoSiteUrl !== '' ? e($seoSiteUrl) : 'نشانی اصلی سایت را وارد کنید.' ?></span></div>
+                    <div class="seo-status-card <?= trim((string) ($settings['seo_home_title'] ?? '')) !== '' ? 'is-ready' : 'is-pending' ?>"><small>عنوان و توضیح خانه</small><strong><?= trim((string) ($settings['seo_home_title'] ?? '')) !== '' && trim((string) ($settings['seo_home_description'] ?? '')) !== '' ? 'آماده' : 'پیشنهاد می‌شود کامل شود' ?></strong><span>برای صفحهٔ اصلی متن یکتا بنویسید.</span></div>
+                    <div class="seo-status-card <?= trim((string) ($settings['google_site_verification'] ?? '')) !== '' ? 'is-ready' : 'is-pending' ?>"><small>تأیید HTML گوگل</small><strong><?= trim((string) ($settings['google_site_verification'] ?? '')) !== '' ? 'کد ثبت شده' : 'در انتظار کد' ?></strong><span>پس از ثبت کد، در Search Console روی تأیید بزنید.</span></div>
+                    <div class="seo-status-card <?= $gscConnected ? 'is-ready' : 'is-pending' ?>"><small>گزارش Search Console</small><strong><?= $gscConnected ? 'متصل' : 'هنوز متصل نیست' ?></strong><span><?= $gscConnected ? fa_num((string) count($gscSites)) . ' ویژگی در دسترس' : 'اتصال فقط‌خواندنی و اختیاری است.' ?></span></div>
+                </div>
+                <div class="seo-incomplete-links">
+                    <a href="index.php?page=brands"><span><small>صفحه‌های برند</small><strong><?= is_int($seoMissingMetadata['brands']) ? ($seoMissingMetadata['brands'] === 0 ? 'عنوان و توضیح سئوی همهٔ صفحه‌های منتشرشده تکمیل است.' : fa_num((string) $seoMissingMetadata['brands']) . ' صفحه بدون عنوان یا توضیح سئو') : 'برای بررسی، database/schema.sql را اجرا کنید.' ?></strong></span><?= icon_svg('arrow-left') ?></a>
+                    <a href="index.php?page=articles"><span><small>یادداشت‌ها</small><strong><?= is_int($seoMissingMetadata['articles']) ? ($seoMissingMetadata['articles'] === 0 ? 'عنوان و توضیح سئوی همهٔ یادداشت‌های منتشرشده تکمیل است.' : fa_num((string) $seoMissingMetadata['articles']) . ' یادداشت بدون عنوان یا توضیح سئو') : 'برای بررسی، database/schema.sql را اجرا کنید.' ?></strong></span><?= icon_svg('arrow-left') ?></a>
+                </div>
+
+                <section class="admin-card seo-card"><div class="admin-card-heading"><div><span class="admin-kicker">مرحلهٔ ۱ · مشخصات جست‌وجو</span><h2>دامنه و صفحهٔ اصلی</h2></div><span class="seo-step-number">۰۱</span></div>
+                    <form class="seo-settings-form" method="post">
+                        <?= csrf_field() ?><input type="hidden" name="action" value="save_seo"><input type="hidden" name="return_page" value="seo">
+                        <div class="item-fields-grid seo-fields-grid">
+                            <label class="admin-field field-wide"><span>نشانی اصلی سایت (Canonical Base URL)</span><input type="url" name="seo_site_url" value="<?= e($settings['seo_site_url'] ?? '') ?>" placeholder="https://example.com" dir="ltr" maxlength="300"><small class="field-hint">نشانی عمومی و نهایی سایت را با https وارد کنید؛ از همین دامنه برای canonical، sitemap و نشانی بازگشت OAuth استفاده می‌شود. اگر سایت در زیرپوشه نصب شده، مسیر آن را هم بنویسید.</small></label>
+                            <label class="admin-field"><span>عنوان سئوی صفحهٔ اصلی</span><input type="text" name="seo_home_title" value="<?= e($settings['seo_home_title'] ?? '') ?>" maxlength="180" placeholder="خالی بماند، عنوان پیش‌فرض سایت استفاده می‌شود"></label>
+                            <label class="admin-field"><span>عبارت‌های هدف صفحهٔ اصلی</span><textarea name="seo_home_keywords" rows="4" maxlength="1000" placeholder="مثلاً هر عبارت را در یک خط بنویسید"><?= e($settings['seo_home_keywords'] ?? '') ?></textarea><small class="field-hint">این فهرست برای برنامه‌ریزی محتواست؛ Google متای keywords را برای رتبه‌بندی به‌کار نمی‌برد.</small></label>
+                            <label class="admin-field field-wide"><span>توضیحات نتیجهٔ جست‌وجوی صفحهٔ اصلی</span><textarea name="seo_home_description" rows="3" maxlength="320" placeholder="خلاصه‌ای روشن و یکتا از خدمات و مزیت شما؛ حدود ۱۲۰ تا ۱۶۰ نویسه."><?= e($settings['seo_home_description'] ?? '') ?></textarea></label>
+                            <label class="admin-field field-wide"><span>کد تأیید مالکیت Google Search Console</span><input type="text" name="google_site_verification" value="<?= e($settings['google_site_verification'] ?? '') ?>" maxlength="200" dir="ltr" placeholder="مقدار داخل content از متای google-site-verification"><small class="field-hint">در Search Console روش HTML tag را انتخاب کنید و فقط مقدار content را اینجا بگذارید. ذخیره کنید، سپس در Search Console روی Verify بزنید؛ این پنل تگ را در صفحهٔ اصلی قرار می‌دهد.</small></label>
+                        </div>
+                        <div class="form-actions"><button class="admin-button admin-button-primary" type="submit">ذخیرهٔ تنظیمات سئو <?= icon_svg('check') ?></button></div>
+                    </form>
+                </section>
+
+                <div class="seo-url-cards">
+                    <a class="seo-url-card" href="<?= e($seoSitemapUrl !== '' ? $seoSitemapUrl : '../sitemap.xml') ?>" target="_blank" rel="noopener"><span><small>نقشهٔ سایت خودکار</small><strong><?= e($seoSitemapUrl !== '' ? $seoSitemapUrl : 'sitemap.xml · پس از ثبت دامنه فعال می‌شود') ?></strong></span><?= icon_svg('arrow') ?></a>
+                    <a class="seo-url-card" href="<?= e($seoRobotsUrl !== '' ? $seoRobotsUrl : '../robots.txt') ?>" target="_blank" rel="noopener"><span><small>فایل robots.txt</small><strong><?= e($seoRobotsUrl !== '' ? $seoRobotsUrl : 'robots.txt · مسیر مدیریت از خزش کنار گذاشته می‌شود') ?></strong></span><?= icon_svg('arrow') ?></a>
+                </div>
+
+                <section class="admin-card seo-card"><div class="admin-card-heading"><div><span class="admin-kicker">مرحلهٔ ۲ · دادهٔ واقعی گوگل</span><h2>اتصال به Google Search Console</h2></div><span class="seo-step-number">۰۲</span></div>
+                    <p class="seo-explainer">تأیید مالکیت سایت و ورود OAuth دو مرحلهٔ جدا هستند: ابتدا متای بالا را در Search Console تأیید کنید؛ سپس با حساب Google دارای دسترسی، اتصال فقط‌خواندنی را انجام دهید. API به‌تنهایی مالکیت دامنه را ایجاد نمی‌کند.</p>
+                    <?php if (!$gscConfigured): ?>
+                        <div class="admin-alert admin-alert--warning">برای فعال‌کردن اتصال، Client ID، Client Secret و کلید رمزگذاری را در فایل محلی <code>app/config.local.php</code> قرار دهید و افزونهٔ PHP OpenSSL و تنظیم <code>allow_url_fopen=On</code> را فعال کنید؛ این فایل نباید وارد Git شود.</div>
+                        <pre class="seo-config-example"><code>'gsc_client_id' =&gt; '...apps.googleusercontent.com',
+'gsc_client_secret' =&gt; 'مقدار محرمانه از Google Cloud',
+'gsc_token_encryption_key' =&gt; 'کلید تصادفی حداقل ۳۲ نویسه‌ای',</code></pre>
+                    <?php else: ?>
+                        <div class="seo-connection-row"><span class="status-pill <?= $gscConnected ? 'status-published' : 'status-draft' ?>"><?= $gscConnected ? 'حساب متصل است' : 'حساب متصل نیست' ?></span><?php if ($gscConnected): ?><form method="post" data-confirm="اتصال Search Console از این پنل قطع شود؟"><?= csrf_field() ?><input type="hidden" name="action" value="disconnect_search_console"><input type="hidden" name="return_page" value="seo"><button class="table-action table-action-danger" type="submit">قطع اتصال</button></form><?php endif; ?></div>
+                        <p class="field-hint">در Google Cloud، Search Console API را فعال و یک OAuth Web client بسازید. Authorized redirect URI باید دقیقاً این باشد:</p>
+                        <code class="seo-callback-uri" dir="ltr"><?= e($gscRedirectUri !== '' ? $gscRedirectUri : 'ابتدا URL امن سایت را در مرحلهٔ ۱ ذخیره کنید.') ?></code>
+                        <?php if ($gscError !== ''): ?><div class="admin-alert admin-alert--error"><?= e($gscError) ?></div><?php endif; ?>
+                        <?php if (!$gscConnected && $gscRedirectUri !== ''): ?><form method="post" class="seo-connect-form"><?= csrf_field() ?><input type="hidden" name="action" value="connect_search_console"><input type="hidden" name="return_page" value="seo"><button class="admin-button admin-button-primary" type="submit">ورود و اتصال حساب Google <?= icon_svg('arrow-left') ?></button><small>دسترسی درخواستی فقط خواندن گزارش Search Console است.</small></form><?php endif; ?>
+                        <?php if ($gscConnected && $gscSites !== []): ?>
+                            <form method="post" class="seo-property-form"><?= csrf_field() ?><input type="hidden" name="action" value="save_gsc_property"><input type="hidden" name="return_page" value="seo"><label class="admin-field"><span>ویژگی سایت در Search Console</span><select name="gsc_property_url" required><?php foreach ($gscSites as $site): $siteUrl = (string) ($site['siteUrl'] ?? ''); if ($siteUrl === '') continue; ?><option value="<?= e($siteUrl) ?>"<?= $selectedGscProperty === $siteUrl ? ' selected' : '' ?>><?= e($siteUrl) ?> · <?= e((string) ($site['permissionLevel'] ?? 'دسترسی')) ?></option><?php endforeach; ?></select></label><button class="admin-button admin-button-ghost" type="submit">ذخیرهٔ ویژگی</button></form>
+                            <?php if ($selectedGscProperty !== ''): ?><form method="post" class="seo-report-form"><?= csrf_field() ?><input type="hidden" name="action" value="fetch_gsc_report"><input type="hidden" name="return_page" value="seo"><button class="admin-button admin-button-secondary" type="submit">دریافت گزارش ۲۸ روز کامل اخیر <?= icon_svg('chart') ?></button><small>برای کامل‌ترشدن داده‌ها، گزارش تا سه روز قبل را می‌خواند.</small></form><?php endif; ?>
+                        <?php elseif ($gscConnected): ?>
+                            <div class="admin-alert admin-alert--warning">این حساب هیچ ویژگی Search Console در دسترس ندارد. مطمئن شوید سایت در Search Console ثبت شده و همین حساب حداقل دسترسی لازم را دارد.</div>
+                        <?php endif; ?>
+                    <?php endif; ?>
+                    <?php if (is_array($gscReport) && is_array($gscReport['rows'] ?? null)): ?>
+                        <div class="seo-report-heading"><div><span class="admin-kicker">عبارت‌ها و صفحه‌های واقعی</span><h3>گزارش <?= fa_num((string) ($gscReport['start'] ?? '')) ?> تا <?= fa_num((string) ($gscReport['end'] ?? '')) ?></h3></div><small>دریافت‌شده در <?= fa_num(date('Y/m/d H:i', (int) ($gscReport['fetched_at'] ?? time()))) ?></small></div>
+                        <?php if ($gscReport['rows'] === []): ?><div class="empty-state"><strong>برای این بازه ردیفی برنگشت.</strong><p>ممکن است سایت تازه تأیید شده باشد یا دادهٔ جست‌وجوی کافی نداشته باشد.</p></div>
+                        <?php else: ?><div class="table-scroll"><table class="admin-table seo-report-table"><thead><tr><th>عبارت جست‌وجو</th><th>صفحه</th><th>کلیک</th><th>نمایش</th><th>CTR</th><th>جایگاه</th><th>راهنما</th></tr></thead><tbody><?php foreach ($gscReport['rows'] as $row): $query = (string) ($row['keys'][0] ?? ''); $resultUrl = (string) ($row['keys'][1] ?? ''); $resultScheme = strtolower((string) parse_url($resultUrl, PHP_URL_SCHEME)); $safeResultUrl = filter_var($resultUrl, FILTER_VALIDATE_URL) && in_array($resultScheme, ['http', 'https'], true) ? $resultUrl : ''; $impressions = (int) ($row['impressions'] ?? 0); $clicks = (int) ($row['clicks'] ?? 0); $ctr = (float) ($row['ctr'] ?? 0); $position = (float) ($row['position'] ?? 0); $opportunity = $impressions >= 10 && $position >= 4 && $position <= 20 && $ctr < .05; ?><tr><td><strong><?= e($query) ?></strong></td><td><?php if ($safeResultUrl !== ''): ?><a href="<?= e($safeResultUrl) ?>" target="_blank" rel="noopener" dir="ltr" class="seo-result-url"><?= e($safeResultUrl) ?></a><?php else: ?><span class="list-help">—</span><?php endif; ?></td><td><?= fa_num((string) $clicks) ?></td><td><?= fa_num((string) $impressions) ?></td><td><?= fa_num((string) round($ctr * 100, 1)) ?>٪</td><td><?= fa_num(number_format($position, 1)) ?></td><td><?= $opportunity ? '<span class="status-pill status-new">بررسی عنوان/محتوا</span>' : '<span class="list-help">—</span>' ?></td></tr><?php endforeach; ?></tbody></table></div><?php endif; ?>
+                        <p class="field-hint seo-report-note">ردیف‌های دارای نمایش و جایگاه ۴ تا ۲۰، سرنخ بررسی‌اند نه تضمین رتبه؛ عنوان، محتوا و نیت جست‌وجوی همان صفحه را با دقت بازبینی کنید.</p>
+                    <?php endif; ?>
+                </section>
+                <div class="admin-note"><span>!</span><p><strong>نکتهٔ مهم:</strong> ثبت عبارت هدف یا متا به‌تنهایی رتبه را تضمین نمی‌کند. برای هر صفحه عنوان و توضیح یکتا بنویسید، همان عبارت را طبیعی در محتوای مفید پوشش دهید و نتیجه را با دادهٔ Search Console بسنجید. Google متای keywords را نادیده می‌گیرد.</p></div>
 
             <?php elseif ($entityMeta !== null): ?>
                 <?php if ($entityTableError !== ''): ?><div class="admin-alert admin-alert--warning"><?= e($entityTableError) ?></div><?php endif; ?>

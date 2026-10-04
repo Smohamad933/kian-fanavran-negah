@@ -45,7 +45,20 @@ function app_config(): array
         'max_upload_bytes' => 4 * 1024 * 1024,
         'max_video_upload_bytes' => 100 * 1024 * 1024,
         'max_font_upload_bytes' => 8 * 1024 * 1024,
+        'gsc_client_id' => '',
+        'gsc_client_secret' => '',
+        'gsc_token_encryption_key' => '',
+        'gsc_redirect_uri' => '',
     ], $local);
+    foreach ([
+        'gsc_client_id' => 'NEGAAH_GSC_CLIENT_ID',
+        'gsc_client_secret' => 'NEGAAH_GSC_CLIENT_SECRET',
+        'gsc_token_encryption_key' => 'NEGAAH_GSC_TOKEN_ENCRYPTION_KEY',
+        'gsc_redirect_uri' => 'NEGAAH_GSC_REDIRECT_URI',
+    ] as $key => $environmentName) {
+        $environmentValue = getenv($environmentName);
+        if ($environmentValue !== false && (string) $environmentValue !== '') $config[$key] = (string) $environmentValue;
+    }
 
     return $config;
 }
@@ -154,6 +167,40 @@ function safe_href(mixed $value, string $fallback = '#contact'): string
         return $value;
     }
     return $fallback;
+}
+
+function seo_normalize_site_url(mixed $value): string
+{
+    $url = trim((string) $value);
+    if ($url === '' || !filter_var($url, FILTER_VALIDATE_URL)) return '';
+    $parts = parse_url($url);
+    if (!is_array($parts) || strtolower((string) ($parts['scheme'] ?? '')) !== 'https' || empty($parts['host'])) return '';
+    if (isset($parts['user']) || isset($parts['pass']) || isset($parts['query']) || isset($parts['fragment'])) return '';
+    return rtrim($url, '/');
+}
+
+function seo_absolute_url(array $settings, string $path = ''): string
+{
+    $base = seo_normalize_site_url($settings['seo_site_url'] ?? '');
+    if ($base === '') return '';
+    return $path === '' ? $base . '/' : $base . '/' . ltrim($path, '/');
+}
+
+function seo_base_href(array $settings): string
+{
+    $baseUrl = seo_normalize_site_url($settings['seo_site_url'] ?? '');
+    if ($baseUrl !== '') return $baseUrl . '/';
+
+    $requestPath = (string) (parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH) ?: '');
+    if (preg_match('~^(.*?)/(?:brand|article)/[^/]+/?$~i', $requestPath, $matches)
+        || preg_match('~^(.*?)/brands/?$~i', $requestPath, $matches)) {
+        $basePath = rtrim((string) ($matches[1] ?? ''), '/');
+    } else {
+        $scriptPath = (string) (parse_url((string) ($_SERVER['SCRIPT_NAME'] ?? ''), PHP_URL_PATH) ?: '');
+        $basePath = rtrim(dirname($scriptPath), '/');
+        if ($basePath === '.' || $basePath === '/') $basePath = '';
+    }
+    return $basePath === '' ? '/' : $basePath . '/';
 }
 
 function safe_image_src(mixed $value, string $fallback = ''): string

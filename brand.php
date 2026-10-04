@@ -55,6 +55,20 @@ $settings = $data['settings'];
 $footerCreditUrl = safe_href($settings['footer_credit_url'] ?? '', '');
 $brandName = (string) ($brand['name'] ?? 'برند پیدا نشد');
 $logo = safe_image_src($brand['logo'] ?? '', '');
+$seoTitle = trim((string) ($brand['seo_title'] ?? '')) ?: ($brandName . ' | برندهای همکار نگاه مدیا');
+$seoDescription = trim((string) ($brand['seo_description'] ?? '')) ?: trim((string) ($brand['short_description'] ?? ''));
+if ($seoDescription === '') $seoDescription = 'صفحهٔ معرفی و آرشیو محتوایی ' . $brandName . ' در نگاه مدیا.';
+$canonicalUrl = $brand ? seo_absolute_url($settings, 'brand/' . rawurlencode((string) $brand['slug'])) : '';
+$brandArchiveHref = $brand ? (($canonicalUrl !== '' ? $canonicalUrl : 'brand.php?slug=' . rawurlencode((string) $brand['slug'])) . '#brand-archive') : '#brand-archive';
+$shareImage = safe_image_src($brand['preview_image'] ?? '', $logo);
+if ($shareImage !== '' && !preg_match('/^https:\/\//i', $shareImage)) $shareImage = seo_absolute_url($settings, $shareImage);
+$brandSchema = $brand && $canonicalUrl !== '' ? (json_encode([
+    '@context' => 'https://schema.org',
+    '@type' => 'WebPage',
+    'name' => $seoTitle,
+    'description' => $seoDescription,
+    'url' => $canonicalUrl,
+], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?: '') : '';
 $primary = safe_color($settings['theme_primary'] ?? '', '#155C5A');
 $accent = safe_color($settings['theme_accent'] ?? '', '#BD5D43');
 $saffron = safe_color($settings['theme_saffron'] ?? '', '#D7A84A');
@@ -68,9 +82,15 @@ $customFontFormat = match (strtolower(pathinfo($customFontPath, PATHINFO_EXTENSI
 <html lang="fa" dir="rtl">
 <head>
     <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="<?= e($brand['short_description'] ?? ('صفحهٔ معرفی و آرشیو محتوایی ' . $brandName . ' در نگاه مدیا.')) ?>">
+    <base href="<?= e(seo_base_href($settings)) ?>">
+    <meta name="description" content="<?= e($seoDescription) ?>">
     <meta name="theme-color" content="<?= e($surface) ?>">
-    <title><?= e($brandName) ?> | برندهای همکار نگاه مدیا</title>
+    <?php if ($brand): ?><link rel="canonical" href="<?= e($canonicalUrl) ?>"><meta property="og:url" content="<?= e($canonicalUrl) ?>"><meta property="og:type" content="website"><?php else: ?><meta name="robots" content="noindex,follow"><?php endif; ?>
+    <meta property="og:site_name" content="<?= e($settings['brand_name']) ?>"><meta property="og:title" content="<?= e($seoTitle) ?>"><meta property="og:description" content="<?= e($seoDescription) ?>">
+    <?php if ($shareImage !== ''): ?><meta property="og:image" content="<?= e($shareImage) ?>"><meta name="twitter:card" content="summary_large_image"><?php else: ?><meta name="twitter:card" content="summary"><?php endif; ?>
+    <meta name="twitter:title" content="<?= e($seoTitle) ?>"><meta name="twitter:description" content="<?= e($seoDescription) ?>">
+    <?php if ($brandSchema !== ''): ?><script type="application/ld+json"><?= $brandSchema ?></script><?php endif; ?>
+    <title><?= e($seoTitle) ?></title>
     <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/site.css">
@@ -108,7 +128,7 @@ $customFontFormat = match (strtolower(pathinfo($customFontPath, PATHINFO_EXTENSI
                         <?php else: ?>
                             <p>صفحهٔ معرفی، بازخورد و آرشیو محتوایی <?= e($brandName) ?>.</p>
                         <?php endif; ?>
-                        <a class="button button-primary" href="#brand-archive"><span>دیدن آرشیو محتوا</span><?= icon_svg('arrow-down') ?></a>
+                        <a class="button button-primary" href="<?= e($brandArchiveHref) ?>"><span>دیدن آرشیو محتوا</span><?= icon_svg('arrow-down') ?></a>
                     </div>
                 </div>
             </section>
