@@ -75,7 +75,7 @@ function admin_entities(PDO $pdo): array
                 'name' => ['label' => 'نام برند', 'type' => 'text', 'required' => true],
                 'slug' => ['label' => 'پیوند انگلیسی', 'type' => 'slug', 'required' => true, 'hint' => 'برای برندهای اولیه از شناسهٔ موجود استفاده کنید.'],
                 'logo' => ['label' => 'لوگوی برند', 'type' => 'image', 'hint' => 'PNG با زمینهٔ شفاف یا WEBP، حداکثر ۴ مگابایت.'],
-                'preview_image' => ['label' => 'تصویر پیش‌نمایش کارت برند', 'type' => 'image', 'hint' => 'تصویر عمودی ۴:۵ تا ۴ مگابایت؛ در فهرست برندها نمایش داده می‌شود و جای لوگو را نمی‌گیرد.'],
+                'preview_image' => ['label' => 'تصویر پیش‌نمایش کارت برند', 'type' => 'image', 'hint' => 'برای نمایش کم‌ارتفاع، تصویر افقی حدود ۳:۱ پیشنهاد می‌شود؛ حداکثر ۴ مگابایت. این تصویر جای لوگو را نمی‌گیرد.'],
                 'short_description' => ['label' => 'معرفی کوتاه', 'type' => 'textarea'],
                 'long_description' => ['label' => 'متن صفحهٔ برند', 'type' => 'textarea'],
                 'testimonial_quote' => ['label' => 'نظر کارفرما (با تأیید ایشان)', 'type' => 'textarea', 'hint' => 'برای رعایت امانت، فقط نقل‌قول واقعی و مورد تأیید برند را منتشر کنید.'],
