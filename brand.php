@@ -88,7 +88,7 @@ $customFontFormat = match (strtolower(pathinfo($customFontPath, PATHINFO_EXTENSI
     <header class="site-header">
         <div class="container header-inner">
             <a class="brand" href="index.php#partners"><span class="brand-symbol" aria-hidden="true"><svg viewBox="0 0 46 46" fill="none"><path d="M4 23C9.6 14.9 16 10.8 23 10.8S36.4 14.9 42 23c-5.6 8.1-12 12.2-19 12.2S9.6 31.1 4 23Z" stroke="currentColor" stroke-width="1.8"/><circle cx="23" cy="23" r="5.7" fill="currentColor"/></svg></span><span class="brand-wordmark"><strong><?= e($settings['brand_name']) ?></strong><small><?= e($settings['brand_descriptor']) ?></small></span></a>
-            <a class="header-contact" href="index.php#partners"><span>همهٔ برندهای همکار</span><?= icon_svg('arrow-left') ?></a>
+            <a class="header-contact" href="brands.php"><span>همهٔ برندهای همکار</span><?= icon_svg('arrow-left') ?></a>
         </div>
     </header>
 
@@ -133,7 +133,6 @@ $customFontFormat = match (strtolower(pathinfo($customFontPath, PATHINFO_EXTENSI
                 <div class="container">
                     <div class="section-heading section-heading-split" data-reveal>
                         <div><div class="eyebrow"><span class="eyebrow-mark"></span>آرشیو محتوایی برند</div><h2>قاب‌هایی از روایت <?= e($brandName) ?></h2></div>
-                        <div class="heading-side"><p>ویدیوها و تصویرها با نسبت‌های افقی، عمودی، مربعی یا ۴:۵ نمایش داده می‌شوند؛ پست‌های اسلایدی را ورق بزنید.</p><span class="archive-count"><?= fa_num((string) count($media)) ?> محتوا</span></div>
                     </div>
 
                     <?php if ($media !== []): ?>
@@ -147,7 +146,7 @@ $customFontFormat = match (strtolower(pathinfo($customFontPath, PATHINFO_EXTENSI
                                 $slideImages = $mediaType === 'image' ? ($mediaSlides[(int) $item['id']] ?? []) : [];
                                 if ($mediaType === 'image' && $slideImages === []) $slideImages = [$mediaPath];
                                 $hasCarousel = count($slideImages) > 1;
-                                $ratio = in_array(($item['aspect_ratio'] ?? ''), ['16:9', '9:16', '1:1', '4:5'], true) ? $item['aspect_ratio'] : '16:9';
+                                $ratio = in_array(($item['aspect_ratio'] ?? ''), ['16:9', '9:16', '1:1', '4:5'], true) ? $item['aspect_ratio'] : '4:5';
                                 $ratioClass = match ($ratio) { '9:16' => 'portrait', '1:1' => 'square', '4:5' => 'four-five', default => 'landscape' };
                                 $extension = strtolower(pathinfo((string) (parse_url($mediaPath, PHP_URL_PATH) ?: ''), PATHINFO_EXTENSION));
                                 $videoMime = $extension === 'webm' ? 'video/webm' : 'video/mp4';

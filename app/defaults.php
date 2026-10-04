@@ -152,6 +152,7 @@ function default_brands(): array
         $result[] = array_merge([
             'id' => $index + 1,
             'logo' => '',
+            'preview_image' => '',
             'short_description' => '',
             'long_description' => '',
             'testimonial_quote' => '',

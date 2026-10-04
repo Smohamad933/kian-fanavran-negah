@@ -177,15 +177,17 @@ $customFontFormat = match (strtolower(pathinfo($customFontPath, PATHINFO_EXTENSI
                         <div class="eyebrow"><span class="eyebrow-mark"></span><?= e($settings['partners_eyebrow']) ?></div>
                         <h2><?= e($settings['partners_title']) ?></h2>
                     </div>
-                    <div class="heading-side partners-heading-side"><p><?= e($settings['partners_description']) ?></p><span class="partners-count"><b><?= fa_num((string) count($featuredBrands)) ?></b><small>برند منتخب</small></span></div>
+                    <div class="heading-side partners-heading-side"><p><?= e($settings['partners_description']) ?></p><div class="partners-heading-actions"><span class="partners-count"><b><?= fa_num((string) count($featuredBrands)) ?></b><small>برند منتخب</small></span><a class="partners-all-link" href="brands.php">مشاهدهٔ همهٔ برندها <?= icon_svg('arrow-left') ?></a></div></div>
                 </div>
                 <?php if ($featuredBrands !== []): ?>
                     <div class="partners-grid">
                         <?php foreach ($featuredBrands as $index => $brand): ?>
-                            <a class="partner-card" href="brand.php?slug=<?= e(rawurlencode((string) $brand['slug'])) ?>" aria-label="مشاهدهٔ صفحهٔ <?= e($brand['name']) ?>" data-reveal data-reveal-delay="<?= e((string) (($index % 4) * 55)) ?>">
-                                <span class="partner-number" dir="ltr">NO. <?= fa_num(str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT)) ?></span>
-                                <span class="partner-name"><?= e($brand['name']) ?></span>
-                                <span class="partner-visit"><?= icon_svg('arrow-left') ?><span>مشاهده صفحه</span></span>
+                            <?php $previewImage = safe_image_src($brand['preview_image'] ?? '', ''); ?>
+                            <a class="partner-card partner-card--preview" href="brand.php?slug=<?= e(rawurlencode((string) $brand['slug'])) ?>" aria-label="مشاهدهٔ صفحهٔ <?= e($brand['name']) ?>" data-reveal data-reveal-delay="<?= e((string) (($index % 4) * 55)) ?>">
+                                <span class="partner-preview">
+                                    <?php if ($previewImage !== ''): ?><img src="<?= e($previewImage) ?>" alt="پیش‌نمایش برند <?= e($brand['name']) ?>" loading="lazy"><?php else: ?><span class="partner-preview-empty"><small>پیش‌نمایش از پنل اضافه می‌شود</small></span><?php endif; ?>
+                                </span>
+                                <span class="partner-card-details"><span class="partner-card-topline"><span class="partner-number" dir="ltr">NO. <?= fa_num(str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT)) ?></span><span class="partner-visit"><?= icon_svg('arrow-left') ?><span>مشاهده صفحه</span></span></span><span class="partner-card-copy"><span class="partner-name"><?= e($brand['name']) ?></span><?php if (trim((string) ($brand['short_description'] ?? '')) !== ''): ?><small class="partner-short-description"><?= e($brand['short_description']) ?></small><?php endif; ?></span></span>
                             </a>
                         <?php endforeach; ?>
                     </div>

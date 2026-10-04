@@ -784,3 +784,45 @@ body.has-js [data-reveal].is-visible { opacity: 1; transform: none; }
     .contact-copy { padding-inline: 20px; }
     .contact-form-wrap { padding-inline: 17px; }
 }
+
+/* Brand preview cards and full directory */
+.partners-heading-actions { display: flex; flex: 0 0 auto; align-items: center; gap: 10px; }
+.partners-all-link { display: inline-flex; align-items: center; gap: 8px; padding: 9px 13px; border: 1px solid rgba(21,92,90,.22); border-radius: 999px; color: var(--teal); background: rgba(255,253,248,.72); font-size: 9px; font-weight: 600; transition: color .2s, background .2s, border-color .2s; white-space: nowrap; }
+.partners-all-link svg { width: 13px; height: 13px; }
+.partners-all-link:hover, .partners-all-link:focus-visible { color: #fff; border-color: var(--teal); background: var(--teal); outline: none; }
+.partner-card.partner-card--preview { display: flex; flex-direction: column; align-items: stretch; gap: 0; min-height: 0; aspect-ratio: auto; padding: 0; overflow: hidden; border: 1px solid #d9d7d1; border-top: 3px solid #292724; border-bottom: 1px solid #d9d7d1; background: #fffdfa; }
+.partner-card--preview:hover, .partner-card--preview:focus-visible { border-top-color: #ad7900; border-bottom-color: #ad7900; }
+.partner-preview { position: relative; display: grid; width: 100%; aspect-ratio: 4 / 5; overflow: hidden; background: #eeeae0; }
+.partner-preview > img { display: block; width: 100%; height: 100%; object-fit: cover; transition: transform .5s cubic-bezier(.2,.7,.2,1); }
+.partner-card--preview:hover .partner-preview > img { transform: scale(1.035); }
+.partner-preview-empty { position: relative; display: grid; place-items: center; width: 100%; height: 100%; padding: 20px; background: linear-gradient(145deg, #f5f1e7, #e9e4d8); }
+.partner-preview-empty::before { content: ''; position: absolute; inset: 18px; border: 1px solid rgba(21,92,90,.16); }
+.partner-preview-empty small { position: relative; max-width: 150px; color: #85877f; font-size: 9px; line-height: 1.9; text-align: center; }
+.partner-card-details { display: flex; flex-direction: column; gap: 5px; min-height: 74px; padding: 11px 15px 13px; background: #fffdfa; }
+.partner-card-topline { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.partner-card-copy { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.partner-card--preview .partner-number { position: static; inset: auto; color: #a87500; font-size: 9px; }
+.partner-card--preview .partner-name { position: static; display: block; min-height: 0; padding: 0; color: #36332f; font-size: 11px; line-height: 1.8; text-align: right; transform: none; overflow-wrap: anywhere; }
+.partner-short-description { display: -webkit-box; overflow: hidden; color: #85867f; font-size: 8px; line-height: 1.8; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.partner-card--preview .partner-visit { position: static; display: inline-flex; gap: 4px; margin: 0; color: #89857d; font-size: 8px; white-space: nowrap; }
+.partner-card--preview .partner-visit svg { width: 11px; height: 11px; }
+.brand-directory-hero { padding: 78px 0 48px; background: var(--paper); }
+.brand-directory-hero h1 { margin-top: 14px; color: var(--ink); font-size: clamp(36px,5.2vw,62px); line-height: 1.45; }
+.brand-directory-hero p { max-width: 700px; margin-top: 10px; color: var(--muted); font-size: 13px; line-height: 2; }
+.brand-directory-count { display: inline-flex; margin-top: 22px; padding: 7px 13px; border: 1px solid rgba(21,92,90,.18); border-radius: 999px; color: var(--teal); background: rgba(255,253,248,.7); font-size: 10px; }
+.brand-directory-section { background: #fbfaf6; }
+.brand-directory-grid { border: 0; }
+@media (max-width: 900px) {
+    .partners-heading-actions { gap: 7px; }
+    .partners-all-link { padding: 8px 11px; }
+}
+@media (max-width: 760px) {
+    .partners-heading-side { align-items: stretch; flex-direction: column; gap: 12px; }
+    .partners-heading-actions { width: 100%; justify-content: space-between; }
+    .brand-directory-hero { padding-block: 54px 34px; }
+    .brand-directory-hero h1 { font-size: clamp(32px,8vw,48px); }
+}
+@media (max-width: 420px) {
+    .partner-card-details { padding-inline: 12px; }
+    .partner-card--preview .partner-name { font-size: 12px; }
+}

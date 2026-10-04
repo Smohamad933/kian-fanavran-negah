@@ -86,6 +86,7 @@ CREATE TABLE IF NOT EXISTS brands (
     name VARCHAR(220) NOT NULL,
     slug VARCHAR(220) NOT NULL,
     logo VARCHAR(500) NOT NULL DEFAULT '',
+    preview_image VARCHAR(500) NOT NULL DEFAULT '',
     short_description TEXT NOT NULL,
     long_description MEDIUMTEXT NOT NULL,
     testimonial_quote TEXT NOT NULL,
@@ -108,6 +109,13 @@ PREPARE brand_featured_column_stmt FROM @brand_featured_column_sql;
 EXECUTE brand_featured_column_stmt;
 DEALLOCATE PREPARE brand_featured_column_stmt;
 
+-- Add an optional cover preview for home and directory brand cards.
+SET @brand_preview_column_exists = (SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'brands' AND column_name = 'preview_image');
+SET @brand_preview_column_sql = IF(@brand_preview_column_exists = 0, 'ALTER TABLE brands ADD COLUMN preview_image VARCHAR(500) NOT NULL DEFAULT '''' AFTER logo', 'SELECT 1 INTO @brand_preview_column_noop');
+PREPARE brand_preview_column_stmt FROM @brand_preview_column_sql;
+EXECUTE brand_preview_column_stmt;
+DEALLOCATE PREPARE brand_preview_column_stmt;
+
 CREATE TABLE IF NOT EXISTS brand_media (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     brand_id INT UNSIGNED NOT NULL,
@@ -116,7 +124,7 @@ CREATE TABLE IF NOT EXISTS brand_media (
     media_type ENUM('image', 'video') NOT NULL DEFAULT 'image',
     media_path VARCHAR(500) NOT NULL DEFAULT '',
     poster_path VARCHAR(500) NOT NULL DEFAULT '',
-    aspect_ratio VARCHAR(5) NOT NULL DEFAULT '16:9',
+    aspect_ratio VARCHAR(5) NOT NULL DEFAULT '4:5',
     sort_order INT NOT NULL DEFAULT 0,
     is_published TINYINT(1) NOT NULL DEFAULT 1,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -128,7 +136,8 @@ CREATE TABLE IF NOT EXISTS brand_media (
 
 -- Convert the legacy ratio ENUM so 4:5 can be stored, keeping this migration repeatable.
 SET @brand_media_ratio_type = (SELECT data_type FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'brand_media' AND column_name = 'aspect_ratio' LIMIT 1);
-SET @brand_media_ratio_sql = IF(@brand_media_ratio_type = 'enum', 'ALTER TABLE brand_media MODIFY COLUMN aspect_ratio VARCHAR(5) NOT NULL DEFAULT ''16:9''', 'SELECT 1 INTO @brand_media_ratio_noop');
+SET @brand_media_ratio_default = (SELECT column_default FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'brand_media' AND column_name = 'aspect_ratio' LIMIT 1);
+SET @brand_media_ratio_sql = IF(@brand_media_ratio_type = 'enum' OR COALESCE(@brand_media_ratio_default, '') <> '4:5', 'ALTER TABLE brand_media MODIFY COLUMN aspect_ratio VARCHAR(5) NOT NULL DEFAULT ''4:5''', 'SELECT 1 INTO @brand_media_ratio_noop');
 PREPARE brand_media_ratio_stmt FROM @brand_media_ratio_sql;
 EXECUTE brand_media_ratio_stmt;
 DEALLOCATE PREPARE brand_media_ratio_stmt;
@@ -143,6 +152,14 @@ CREATE TABLE IF NOT EXISTS brand_media_slides (
     KEY idx_brand_media_slides_order (brand_media_id, sort_order, id),
     CONSTRAINT fk_brand_media_slide_post FOREIGN KEY (brand_media_id) REFERENCES brand_media (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Switch existing multi-slide posts that still use the old default ratio once; later admin choices remain untouched.
+SET @brand_slide_ratio_migration = (SELECT setting_value FROM site_settings WHERE setting_key = 'system_brand_slide_ratio_4_5_v1' LIMIT 1);
+SET @brand_slide_ratio_sql = IF(@brand_slide_ratio_migration IS NULL, 'UPDATE brand_media SET aspect_ratio = ''4:5'' WHERE aspect_ratio = ''16:9'' AND id IN (SELECT brand_media_id FROM brand_media_slides GROUP BY brand_media_id HAVING COUNT(*) > 1)', 'SELECT 1 INTO @brand_slide_ratio_noop');
+PREPARE brand_slide_ratio_stmt FROM @brand_slide_ratio_sql;
+EXECUTE brand_slide_ratio_stmt;
+DEALLOCATE PREPARE brand_slide_ratio_stmt;
+INSERT IGNORE INTO site_settings (setting_key, setting_value) VALUES ('system_brand_slide_ratio_4_5_v1', 'done');
 
 CREATE TABLE IF NOT EXISTS inquiries (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,

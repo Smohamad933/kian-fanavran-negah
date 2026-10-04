@@ -1,0 +1,78 @@
+<?php
+
+declare(strict_types=1);
+require_once __DIR__ . '/app/bootstrap.php';
+
+$data = load_site_data($pdo);
+$brands = array_values(array_filter($data['brands'], static fn(array $brand): bool => !empty($brand['is_published'])));
+$settings = $data['settings'];
+$footerCreditUrl = safe_href($settings['footer_credit_url'] ?? '', '');
+$primary = safe_color($settings['theme_primary'] ?? '', '#155C5A');
+$accent = safe_color($settings['theme_accent'] ?? '', '#BD5D43');
+$saffron = safe_color($settings['theme_saffron'] ?? '', '#D7A84A');
+$surface = safe_color($settings['theme_surface'] ?? '', '#F6F3EA');
+$customFontPath = safe_font_src($settings['custom_font_path'] ?? '');
+$customFontFormat = match (strtolower(pathinfo($customFontPath, PATHINFO_EXTENSION))) {
+    'woff2' => 'woff2', 'woff' => 'woff', 'ttf' => 'truetype', 'otf' => 'opentype', default => ''
+};
+?>
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="فهرست برندهای همکار نگاه مدیا و پیش‌نمایشی از روایت هر برند.">
+    <meta name="theme-color" content="<?= e($surface) ?>">
+    <title>همهٔ برندهای همکار | <?= e($settings['brand_name']) ?></title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/site.css">
+    <style>
+        :root{--teal:<?= e($primary) ?>;--clay:<?= e($accent) ?>;--saffron:<?= e($saffron) ?>;--paper:<?= e($surface) ?>;}
+        <?php if ($customFontPath !== ''): ?>
+        @font-face{font-family:'NegaahCustom';src:url('<?= e($customFontPath) ?>') format('<?= e($customFontFormat) ?>');font-weight:100 900;font-display:swap;}
+        :root{--font:'NegaahCustom','Vazirmatn',Tahoma,sans-serif;}
+        <?php endif; ?>
+    </style>
+    <script defer src="assets/js/site.js"></script>
+</head>
+<body>
+    <div class="scroll-progress" aria-hidden="true"><span></span></div>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a class="brand" href="index.php"><span class="brand-symbol" aria-hidden="true"><svg viewBox="0 0 46 46" fill="none"><path d="M4 23C9.6 14.9 16 10.8 23 10.8S36.4 14.9 42 23c-5.6 8.1-12 12.2-19 12.2S9.6 31.1 4 23Z" stroke="currentColor" stroke-width="1.8"/><circle cx="23" cy="23" r="5.7" fill="currentColor"/></svg></span><span class="brand-wordmark"><strong><?= e($settings['brand_name']) ?></strong><small><?= e($settings['brand_descriptor']) ?></small></span></a>
+            <a class="header-contact" href="index.php#partners"><span>بازگشت به صفحهٔ اصلی</span><?= icon_svg('arrow-left') ?></a>
+        </div>
+    </header>
+
+    <main>
+        <section class="brand-directory-hero">
+            <div class="article-container" data-reveal>
+                <div class="eyebrow"><span class="eyebrow-mark"></span>آرشیو برندهای همکار</div>
+                <h1>همهٔ برندهای هم‌مسیر</h1>
+                <p>هر برند، روایتی مستقل از یک مسیر مشترک است. برای دیدن معرفی و آرشیو هر برند، کارت آن را باز کنید.</p>
+                <span class="brand-directory-count"><?= fa_num((string) count($brands)) ?> برند منتشرشده</span>
+            </div>
+        </section>
+        <section class="brand-directory-section section-space" aria-label="فهرست همهٔ برندها">
+            <div class="container">
+                <?php if ($brands !== []): ?>
+                    <div class="partners-grid brand-directory-grid">
+                        <?php foreach ($brands as $index => $brand): ?>
+                            <?php $previewImage = safe_image_src($brand['preview_image'] ?? '', ''); ?>
+                            <a class="partner-card partner-card--preview" href="brand.php?slug=<?= e(rawurlencode((string) $brand['slug'])) ?>" aria-label="مشاهدهٔ صفحهٔ <?= e($brand['name']) ?>" data-reveal data-reveal-delay="<?= e((string) (($index % 4) * 45)) ?>">
+                                <span class="partner-preview">
+                                    <?php if ($previewImage !== ''): ?><img src="<?= e($previewImage) ?>" alt="پیش‌نمایش برند <?= e($brand['name']) ?>" loading="lazy"><?php else: ?><span class="partner-preview-empty"><small>پیش‌نمایش از پنل اضافه می‌شود</small></span><?php endif; ?>
+                                </span>
+                                <span class="partner-card-details"><span class="partner-card-topline"><span class="partner-number" dir="ltr">NO. <?= fa_num(str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT)) ?></span><span class="partner-visit"><?= icon_svg('arrow-left') ?><span>مشاهده صفحه</span></span></span><span class="partner-card-copy"><span class="partner-name"><?= e($brand['name']) ?></span><?php if (trim((string) ($brand['short_description'] ?? '')) !== ''): ?><small class="partner-short-description"><?= e($brand['short_description']) ?></small><?php endif; ?></span></span>
+                            </a>
+                        <?php endforeach; ?>
+                    </div>
+                <?php else: ?>
+                    <div class="partners-empty"><strong>در حال حاضر برندی برای نمایش منتشر نشده است.</strong></div>
+                <?php endif; ?>
+            </div>
+        </section>
+    </main>
+    <footer class="site-footer"><div class="container footer-bottom"><span>© <?= fa_num(date('Y')) ?> <?= e($settings['brand_name']) ?></span><?php if ((string) ($settings['footer_show_credit'] ?? '1') === '1'): ?><span class="footer-credit">نگاه مدیا، از خانوادهٔ <?php if ($footerCreditUrl !== ''): ?><a href="<?= e($footerCreditUrl) ?>"<?= (str_starts_with($footerCreditUrl, 'http://') || str_starts_with($footerCreditUrl, 'https://')) ? ' target="_blank" rel="noopener noreferrer"' : '' ?>><b>کیان فناوران نگاه</b></a><?php else: ?><b>کیان فناوران نگاه</b><?php endif; ?></span><?php endif; ?></div></footer>
+</body>
+</html>
