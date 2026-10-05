@@ -8,6 +8,18 @@ $footerCreditUrl = safe_href($settings['footer_credit_url'] ?? '', '');
 $customFontFormat = match (strtolower(pathinfo($customFontPath, PATHINFO_EXTENSION))) {
     'woff2' => 'woff2', 'woff' => 'woff', 'ttf' => 'truetype', 'otf' => 'opentype', default => ''
 };
+$partnerLogoBrands = [];
+foreach ($featuredBrands as $featuredBrand) {
+    $partnerName = trim((string) ($featuredBrand['name'] ?? ''));
+    if ($partnerName === '') continue;
+    $partnerLogoBrands[] = [
+        'name' => $partnerName,
+        'logo' => safe_image_src($featuredBrand['logo'] ?? '', ''),
+        'href' => 'brand.php?slug=' . rawurlencode((string) ($featuredBrand['slug'] ?? '')),
+        'index' => count($partnerLogoBrands),
+    ];
+}
+$partnerLogoData = json_encode($partnerLogoBrands, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?: '[]';
 ?>
 <!doctype html>
 <html lang="fa" dir="rtl">
@@ -184,17 +196,18 @@ $customFontFormat = match (strtolower(pathinfo($customFontPath, PATHINFO_EXTENSI
                     </div>
                     <div class="partners-heading-side"><a class="partners-all-link" href="brands.php">همهٔ برندها <?= icon_svg('arrow-left') ?></a></div>
                 </div>
-                <?php if ($featuredBrands !== []): ?>
-                    <div class="partners-grid">
-                        <?php foreach ($featuredBrands as $index => $brand): ?>
-                            <?php $previewImage = safe_image_src($brand['preview_image'] ?? '', ''); ?>
-                            <a class="partner-card partner-card--preview" href="brand.php?slug=<?= e(rawurlencode((string) $brand['slug'])) ?>" aria-label="مشاهدهٔ صفحهٔ <?= e($brand['name']) ?>" data-reveal data-reveal-delay="<?= e((string) (($index % 4) * 55)) ?>">
-                                <span class="partner-preview">
-                                    <?php if ($previewImage !== ''): ?><img src="<?= e($previewImage) ?>" alt="پیش‌نمایش برند <?= e($brand['name']) ?>" loading="lazy"><?php else: ?><span class="partner-preview-empty"><small>پیش‌نمایش از پنل اضافه می‌شود</small></span><?php endif; ?>
-                                </span>
-                                <span class="partner-card-details"><span class="partner-card-topline"><span class="partner-number" dir="ltr">NO. <?= fa_num(str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT)) ?></span><span class="partner-visit"><?= icon_svg('arrow-left') ?><span>مشاهده صفحه</span></span></span><span class="partner-card-copy"><span class="partner-name"><?= e($brand['name']) ?></span><?php if (trim((string) ($brand['short_description'] ?? '')) !== ''): ?><small class="partner-short-description"><?= e($brand['short_description']) ?></small><?php endif; ?></span></span>
-                            </a>
-                        <?php endforeach; ?>
+                <?php if ($partnerLogoBrands !== []): ?>
+                    <div class="partners-logo-panel">
+                        <div class="partners-logo-grid" data-logo-wall role="group" aria-label="لوگوهای برندهای منتخب">
+                            <?php foreach (array_slice($partnerLogoBrands, 0, 18) as $partner): ?>
+                                <a class="partner-logo-cell" data-logo-slot data-logo-index="<?= e((string) $partner['index']) ?>" href="<?= e($partner['href']) ?>" title="<?= e($partner['name']) ?>" aria-label="مشاهدهٔ صفحهٔ <?= e($partner['name']) ?>">
+                                    <span class="partner-logo-art" data-logo-art>
+                                        <?php if ($partner['logo'] !== ''): ?><img src="<?= e($partner['logo']) ?>" alt="<?= e($partner['name']) ?>" loading="lazy" decoding="async"><?php else: ?><span class="partner-logo-wordmark"><?= e($partner['name']) ?></span><?php endif; ?>
+                                    </span>
+                                </a>
+                            <?php endforeach; ?>
+                        </div>
+                        <script type="application/json" data-logo-pool><?= $partnerLogoData ?></script>
                     </div>
                 <?php else: ?>
                     <div class="partners-empty"><strong>برندهای منتخب به‌زودی در این بخش نمایش داده می‌شوند.</strong></div>

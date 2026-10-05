@@ -125,4 +125,82 @@
     }
   }, { passive: true });
   updateProgress();
+
+  const logoWall = document.querySelector('[data-logo-wall]');
+  const logoPoolNode = document.querySelector('[data-logo-pool]');
+  if (logoWall && logoPoolNode && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    let logoPool = [];
+    try { logoPool = JSON.parse(logoPoolNode.textContent || '[]'); } catch (error) { logoPool = []; }
+    const logoSlots = Array.from(logoWall.querySelectorAll('[data-logo-slot]'));
+    if (logoSlots.length > 1 && logoPool.length > 1) {
+      const visibleLogos = logoSlots.map((slot) => logoPool[Number(slot.dataset.logoIndex)]).filter(Boolean);
+      const waitingLogos = logoPool.slice(logoSlots.length);
+      let lastSlotIndex = -1;
+      let isChanging = false;
+
+      const makeWordmark = (name) => {
+        const wordmark = document.createElement('span');
+        wordmark.className = 'partner-logo-wordmark';
+        wordmark.textContent = name;
+        return wordmark;
+      };
+      const applyLogo = (slot, brand) => {
+        if (!brand) return;
+        const art = slot.querySelector('[data-logo-art]');
+        if (!art) return;
+        slot.href = brand.href || '#';
+        slot.title = brand.name || '';
+        slot.setAttribute('aria-label', `مشاهدهٔ صفحهٔ ${brand.name || 'برند'}`);
+        slot.dataset.logoIndex = String(brand.index);
+        art.replaceChildren();
+        if (brand.logo) {
+          const image = document.createElement('img');
+          image.src = brand.logo;
+          image.alt = brand.name || '';
+          image.loading = 'lazy';
+          image.decoding = 'async';
+          image.addEventListener('error', () => {
+            if (image.parentNode === art) art.replaceChildren(makeWordmark(brand.name || ''));
+          }, { once: true });
+          art.appendChild(image);
+        } else {
+          art.appendChild(makeWordmark(brand.name || ''));
+        }
+      };
+      const transitionLogos = (changes) => {
+        if (isChanging) return;
+        isChanging = true;
+        changes.forEach(([slot]) => slot.classList.add('is-swapping'));
+        window.setTimeout(() => {
+          changes.forEach(([slot, brand]) => applyLogo(slot, brand));
+          window.requestAnimationFrame(() => {
+            changes.forEach(([slot]) => slot.classList.remove('is-swapping'));
+            isChanging = false;
+          });
+        }, 300);
+      };
+      const rotateLogos = () => {
+        if (document.hidden || isChanging || logoWall.matches(':hover') || logoWall.contains(document.activeElement)) return;
+        if (waitingLogos.length > 0) {
+          let slotIndex = Math.floor(Math.random() * logoSlots.length);
+          if (slotIndex === lastSlotIndex) slotIndex = (slotIndex + 1) % logoSlots.length;
+          lastSlotIndex = slotIndex;
+          const incoming = waitingLogos.shift();
+          waitingLogos.push(visibleLogos[slotIndex]);
+          visibleLogos[slotIndex] = incoming;
+          transitionLogos([[logoSlots[slotIndex], incoming]]);
+          return;
+        }
+        const firstIndex = Math.floor(Math.random() * logoSlots.length);
+        const offset = 1 + Math.floor(Math.random() * (logoSlots.length - 1));
+        const secondIndex = (firstIndex + offset) % logoSlots.length;
+        const firstLogo = visibleLogos[firstIndex];
+        const secondLogo = visibleLogos[secondIndex];
+        visibleLogos[firstIndex] = secondLogo;
+        visibleLogos[secondIndex] = firstLogo;
+        transitionLogos([[logoSlots[firstIndex], secondLogo], [logoSlots[secondIndex], firstLogo]]);
+      };
+      window.setInterval(rotateLogos, 3800);
+    }
+  }
 })();
