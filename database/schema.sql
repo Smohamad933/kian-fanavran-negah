@@ -105,6 +105,7 @@ CREATE TABLE IF NOT EXISTS brands (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     name VARCHAR(220) NOT NULL,
     slug VARCHAR(220) NOT NULL,
+    category VARCHAR(32) NOT NULL DEFAULT 'companies',
     logo VARCHAR(500) NOT NULL DEFAULT '',
     preview_image VARCHAR(500) NOT NULL DEFAULT '',
     seo_title VARCHAR(180) NOT NULL DEFAULT '',
@@ -131,6 +132,41 @@ SET @brand_featured_column_sql = IF(@brand_featured_column_exists = 0, 'ALTER TA
 PREPARE brand_featured_column_stmt FROM @brand_featured_column_sql;
 EXECUTE brand_featured_column_stmt;
 DEALLOCATE PREPARE brand_featured_column_stmt;
+
+-- Add one of four fixed archive categories without changing existing brand content.
+SET @brand_category_column_exists = (SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'brands' AND column_name = 'category');
+SET @brand_category_column_sql = IF(@brand_category_column_exists = 0, 'ALTER TABLE brands ADD COLUMN category VARCHAR(32) NOT NULL DEFAULT ''companies'' AFTER slug', 'SELECT 1 INTO @brand_category_column_noop');
+PREPARE brand_category_column_stmt FROM @brand_category_column_sql;
+EXECUTE brand_category_column_stmt;
+DEALLOCATE PREPARE brand_category_column_stmt;
+
+-- Classify the built-in brand records once; later admin selections are preserved.
+SET @brand_categories_migration = (SELECT setting_value FROM site_settings WHERE setting_key = 'system_brand_categories_v1' LIMIT 1);
+UPDATE brands SET category = CASE slug
+    WHEN 'shahid-chamran-university' THEN 'culture_education'
+    WHEN 'ministry-science-research' THEN 'culture_education'
+    WHEN 'chamran-plus' THEN 'culture_education'
+    WHEN 'ofogh-danesh-soraya' THEN 'culture_education'
+    WHEN 'charity-14-maasoom' THEN 'public'
+    WHEN 'ahvaz-municipality' THEN 'public'
+    WHEN 'hormozgan-governorate' THEN 'public'
+    WHEN 'khuzestan-governorate' THEN 'public'
+    WHEN 'khuzestan-advertising-organization' THEN 'public'
+    WHEN 'ahvaz-friday-office' THEN 'public'
+    WHEN 'irib-khuzestan' THEN 'arts_media'
+    WHEN 'shushtar-water-structures' THEN 'arts_media'
+    WHEN 'alireza-ghorbani-concert' THEN 'arts_media'
+    WHEN 'khalaghi-iranian-orchestra' THEN 'arts_media'
+    WHEN 'khalaghi-composition-award' THEN 'arts_media'
+    WHEN 'tehran-music-house' THEN 'arts_media'
+    WHEN 'khuzestan-media-center' THEN 'arts_media'
+    WHEN 'khuzestan-choir-group' THEN 'arts_media'
+    WHEN 'ney-nava-music-group' THEN 'arts_media'
+    WHEN 'studio-hoor' THEN 'arts_media'
+    ELSE 'companies'
+END
+WHERE @brand_categories_migration IS NULL;
+INSERT IGNORE INTO site_settings (setting_key, setting_value) VALUES ('system_brand_categories_v1', 'done');
 
 -- Add an optional cover preview for home and directory brand cards.
 SET @brand_preview_column_exists = (SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'brands' AND column_name = 'preview_image');
@@ -344,36 +380,36 @@ INSERT IGNORE INTO articles (title, slug, category, excerpt, body, image, publis
 ('کمپین خوب از پرسیدن سؤال درست شروع می‌شود', 'better-campaigns', 'استراتژی', 'پیش از انتخاب رسانه و فرمت، باید بدانیم قرار است چه چیزی در مخاطب تغییر کند.', 'پیش از انتخاب رسانه و فرمت، باید بدانیم قرار است چه چیزی در مخاطب تغییر کند. کمپین زمانی جهت پیدا می‌کند که یک مسئله روشن، یک مخاطب مشخص و یک هدف قابل سنجش داشته باشد.\n\nبا پرسیدن سؤال درست، ایده از حد یک تصویر جذاب فراتر می‌رود و به تجربه‌ای تبدیل می‌شود که مخاطب آن را می‌فهمد، به یاد می‌آورد و درباره‌اش حرف می‌زند.', '', CURRENT_DATE, 1);
 
 -- برندهای همکار اولیه؛ دیدگاه واقعی هر برند را از پنل ثبت کنید.
-INSERT IGNORE INTO brands (name, slug, logo, short_description, long_description, testimonial_quote, sort_order, is_published, is_featured) VALUES
-('رنس تکس', 'rans-tex', '', '', '', '', 1, 1, 0),
-('گالری طلاوجواهر محمود', 'mahmoud-jewelry', '', '', '', '', 2, 1, 0),
-('رویان شبکه', 'royan-network', '', '', '', '', 3, 1, 0),
-('الدراگ استور', 'aldrag-store', '', '', '', '', 4, 1, 0),
-('دانشگاه شهید چمران اهواز', 'shahid-chamran-university', '', '', '', '', 5, 1, 0),
-('وزارت علوم، تحقیقات و فناوری', 'ministry-science-research', '', '', '', '', 6, 1, 0),
-('چمران پلاس', 'chamran-plus', '', '', '', '', 7, 1, 0),
-('صداوسیما مرکز خوزستان', 'irib-khuzestan', '', '', '', '', 8, 1, 0),
-('انجمن خیریه ۱۴ معصوم', 'charity-14-maasoom', '', '', '', '', 9, 1, 0),
-('گالری نقره سیده راد', 'seyedarad-silver', '', '', '', '', 10, 1, 0),
-('گالری جواهرات هم‌نفس', 'hamnafas-jewelry', '', '', '', '', 11, 1, 0),
-('سازه‌های آبی شوشتر', 'shushtar-water-structures', '', '', '', '', 12, 1, 0),
-('مجموعه نظریان', 'nazarian-group', '', '', '', '', 13, 1, 0),
-('ابزارآلات قشقایی', 'ghashghai-tools', '', '', '', '', 14, 1, 0),
-('شهرداری اهواز', 'ahvaz-municipality', '', '', '', '', 15, 1, 0),
-('استانداری هرمزگان', 'hormozgan-governorate', '', '', '', '', 16, 1, 0),
-('استانداری خوزستان', 'khuzestan-governorate', '', '', '', '', 17, 1, 0),
-('کنسرت علیرضا قربانی', 'alireza-ghorbani-concert', '', '', '', '', 18, 1, 0),
-('ارکستر سازهای ایرانی به یاد خالقی', 'khalaghi-iranian-orchestra', '', '', '', '', 19, 1, 0),
-('جایزه ملی آهنگسازی استاد روح‌الله خالقی', 'khalaghi-composition-award', '', '', '', '', 20, 1, 0),
-('خانه موسیقی تهران', 'tehran-music-house', '', '', '', '', 21, 1, 0),
-('مشاوران افق دانش ثریا', 'ofogh-danesh-soraya', '', '', '', '', 22, 1, 0),
-('مرکز رسانه استان خوزستان', 'khuzestan-media-center', '', '', '', '', 23, 1, 0),
-('سازمان تبلیغات استان خوزستان', 'khuzestan-advertising-organization', '', '', '', '', 24, 1, 0),
-('آژانس تبلیغاتی لامیلا', 'lamila-ad-agency', '', '', '', '', 25, 1, 0),
-('مجموعه سرودهای استان خوزستان', 'khuzestan-choir-group', '', '', '', '', 26, 1, 0),
-('مؤسسه برتینا', 'bertina-institute', '', '', '', '', 27, 1, 0),
-('گروه موسیقی نی‌نوا', 'ney-nava-music-group', '', '', '', '', 28, 1, 0),
-('دفتر امام جمعه اهواز', 'ahvaz-friday-office', '', '', '', '', 29, 1, 0),
-('استودیو هور', 'studio-hoor', '', '', '', '', 30, 1, 0),
-('کلینیک مشاوره کودک و نوجوان بهشت زندگی', 'behesht-zendegi-clinic', '', '', '', '', 31, 1, 0),
-('طلا و جواهرات محمد سیاوشی', 'mohammad-siavashi-jewelry', '', '', '', '', 32, 1, 0);
+INSERT IGNORE INTO brands (name, slug, category, logo, short_description, long_description, testimonial_quote, sort_order, is_published, is_featured) VALUES
+('رنس تکس', 'rans-tex', 'companies', '', '', '', '', 1, 1, 0),
+('گالری طلاوجواهر محمود', 'mahmoud-jewelry', 'companies', '', '', '', '', 2, 1, 0),
+('رویان شبکه', 'royan-network', 'companies', '', '', '', '', 3, 1, 0),
+('الدراگ استور', 'aldrag-store', 'companies', '', '', '', '', 4, 1, 0),
+('دانشگاه شهید چمران اهواز', 'shahid-chamran-university', 'culture_education', '', '', '', '', 5, 1, 0),
+('وزارت علوم، تحقیقات و فناوری', 'ministry-science-research', 'culture_education', '', '', '', '', 6, 1, 0),
+('چمران پلاس', 'chamran-plus', 'culture_education', '', '', '', '', 7, 1, 0),
+('صداوسیما مرکز خوزستان', 'irib-khuzestan', 'arts_media', '', '', '', '', 8, 1, 0),
+('انجمن خیریه ۱۴ معصوم', 'charity-14-maasoom', 'public', '', '', '', '', 9, 1, 0),
+('گالری نقره سیده راد', 'seyedarad-silver', 'companies', '', '', '', '', 10, 1, 0),
+('گالری جواهرات هم‌نفس', 'hamnafas-jewelry', 'companies', '', '', '', '', 11, 1, 0),
+('سازه‌های آبی شوشتر', 'shushtar-water-structures', 'arts_media', '', '', '', '', 12, 1, 0),
+('مجموعه نظریان', 'nazarian-group', 'companies', '', '', '', '', 13, 1, 0),
+('ابزارآلات قشقایی', 'ghashghai-tools', 'companies', '', '', '', '', 14, 1, 0),
+('شهرداری اهواز', 'ahvaz-municipality', 'public', '', '', '', '', 15, 1, 0),
+('استانداری هرمزگان', 'hormozgan-governorate', 'public', '', '', '', '', 16, 1, 0),
+('استانداری خوزستان', 'khuzestan-governorate', 'public', '', '', '', '', 17, 1, 0),
+('کنسرت علیرضا قربانی', 'alireza-ghorbani-concert', 'arts_media', '', '', '', '', 18, 1, 0),
+('ارکستر سازهای ایرانی به یاد خالقی', 'khalaghi-iranian-orchestra', 'arts_media', '', '', '', '', 19, 1, 0),
+('جایزه ملی آهنگسازی استاد روح‌الله خالقی', 'khalaghi-composition-award', 'arts_media', '', '', '', '', 20, 1, 0),
+('خانه موسیقی تهران', 'tehran-music-house', 'arts_media', '', '', '', '', 21, 1, 0),
+('مشاوران افق دانش ثریا', 'ofogh-danesh-soraya', 'culture_education', '', '', '', '', 22, 1, 0),
+('مرکز رسانه استان خوزستان', 'khuzestan-media-center', 'arts_media', '', '', '', '', 23, 1, 0),
+('سازمان تبلیغات استان خوزستان', 'khuzestan-advertising-organization', 'public', '', '', '', '', 24, 1, 0),
+('آژانس تبلیغاتی لامیلا', 'lamila-ad-agency', 'companies', '', '', '', '', 25, 1, 0),
+('مجموعه سرودهای استان خوزستان', 'khuzestan-choir-group', 'arts_media', '', '', '', '', 26, 1, 0),
+('مؤسسه برتینا', 'bertina-institute', 'companies', '', '', '', '', 27, 1, 0),
+('گروه موسیقی نی‌نوا', 'ney-nava-music-group', 'arts_media', '', '', '', '', 28, 1, 0),
+('دفتر امام جمعه اهواز', 'ahvaz-friday-office', 'public', '', '', '', '', 29, 1, 0),
+('استودیو هور', 'studio-hoor', 'arts_media', '', '', '', '', 30, 1, 0),
+('کلینیک مشاوره کودک و نوجوان بهشت زندگی', 'behesht-zendegi-clinic', 'companies', '', '', '', '', 31, 1, 0),
+('طلا و جواهرات محمد سیاوشی', 'mohammad-siavashi-jewelry', 'companies', '', '', '', '', 32, 1, 0);

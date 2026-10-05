@@ -93,7 +93,7 @@ $customFontFormat = match (strtolower(pathinfo($customFontPath, PATHINFO_EXTENSI
     <title><?= e($seoTitle) ?></title>
     <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/site.css">
+    <link rel="stylesheet" href="<?= e(static_asset_url('assets/css/site.css')) ?>">
     <style>
         :root{--teal:<?= e($primary) ?>;--clay:<?= e($accent) ?>;--saffron:<?= e($saffron) ?>;--paper:<?= e($surface) ?>;}
         <?php if ($customFontPath !== ''): ?>
@@ -101,7 +101,7 @@ $customFontFormat = match (strtolower(pathinfo($customFontPath, PATHINFO_EXTENSI
         :root{--font:'NegaahCustom','Vazirmatn',Tahoma,sans-serif;}
         <?php endif; ?>
     </style>
-    <script defer src="assets/js/site.js"></script>
+    <script defer src="<?= e(static_asset_url('assets/js/site.js')) ?>"></script>
 </head>
 <body>
     <div class="scroll-progress" aria-hidden="true"><span></span></div>

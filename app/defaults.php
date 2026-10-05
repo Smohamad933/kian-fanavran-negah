@@ -2,6 +2,49 @@
 
 declare(strict_types=1);
 
+function brand_category_options(): array
+{
+    return [
+        'culture_education' => 'مراکز فرهنگی و آموزشی',
+        'companies' => 'شرکت‌ها و کسب‌وکارها',
+        'public' => 'نهادهای دولتی، عمومی و اجتماعی',
+        'arts_media' => 'هنر، رسانه و رویداد',
+    ];
+}
+
+function normalize_brand_category(mixed $category): string
+{
+    $category = trim((string) $category);
+    return array_key_exists($category, brand_category_options()) ? $category : 'companies';
+}
+
+function default_brand_category(string $slug): string
+{
+    $categories = [
+        'shahid-chamran-university' => 'culture_education',
+        'ministry-science-research' => 'culture_education',
+        'chamran-plus' => 'culture_education',
+        'ofogh-danesh-soraya' => 'culture_education',
+        'charity-14-maasoom' => 'public',
+        'ahvaz-municipality' => 'public',
+        'hormozgan-governorate' => 'public',
+        'khuzestan-governorate' => 'public',
+        'khuzestan-advertising-organization' => 'public',
+        'ahvaz-friday-office' => 'public',
+        'irib-khuzestan' => 'arts_media',
+        'shushtar-water-structures' => 'arts_media',
+        'alireza-ghorbani-concert' => 'arts_media',
+        'khalaghi-iranian-orchestra' => 'arts_media',
+        'khalaghi-composition-award' => 'arts_media',
+        'tehran-music-house' => 'arts_media',
+        'khuzestan-media-center' => 'arts_media',
+        'khuzestan-choir-group' => 'arts_media',
+        'ney-nava-music-group' => 'arts_media',
+        'studio-hoor' => 'arts_media',
+    ];
+    return $categories[$slug] ?? 'companies';
+}
+
 function default_settings(): array
 {
     return [
@@ -154,6 +197,7 @@ function default_brands(): array
     foreach ($records as $index => $record) {
         $result[] = array_merge([
             'id' => $index + 1,
+            'category' => default_brand_category((string) $record['slug']),
             'logo' => '',
             'preview_image' => '',
             'short_description' => '',

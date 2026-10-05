@@ -89,6 +89,15 @@ function e(mixed $value): string
     return htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
 
+function static_asset_url(string $path): string
+{
+    $path = ltrim(str_replace('\\', '/', trim($path)), '/');
+    if ($path === '' || str_contains($path, '..') || !preg_match('/^[A-Za-z0-9._\\/-]+$/', $path)) return '';
+    $filePath = dirname(__DIR__) . '/' . $path;
+    $version = is_file($filePath) ? @filemtime($filePath) : false;
+    return $path . ($version === false ? '' : '?v=' . rawurlencode((string) $version));
+}
+
 function fa_num(mixed $value): string
 {
     return strtr((string) $value, ['0' => '۰', '1' => '۱', '2' => '۲', '3' => '۳', '4' => '۴', '5' => '۵', '6' => '۶', '7' => '۷', '8' => '۸', '9' => '۹']);

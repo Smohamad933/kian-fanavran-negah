@@ -72,7 +72,7 @@ $customFontFormat = match (strtolower(pathinfo($customFontPath, PATHINFO_EXTENSI
     <title><?= e($seoTitle) ?></title>
     <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/site.css">
+    <link rel="stylesheet" href="<?= e(static_asset_url('assets/css/site.css')) ?>">
     <style>
         :root{--teal:<?= e($primary) ?>;--clay:<?= e($accent) ?>;--paper:<?= e($surface) ?>;}
         <?php if ($customFontPath !== ''): ?>

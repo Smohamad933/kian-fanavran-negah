@@ -1263,3 +1263,75 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 @media (prefers-reduced-motion: reduce) {
     .partner-logo-art, .partner-logo-cell, .partner-logo-cell img { transition: none; }
 }
+
+/* Four fixed sectors for the brand directory */
+.brand-directory-filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 34px;
+}
+.brand-directory-filter {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 14px;
+    border: 1px solid rgba(29, 29, 31, .11);
+    border-radius: 999px;
+    color: #6e6e73;
+    background: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.5;
+    transition: color .2s ease, border-color .2s ease, background .2s ease, box-shadow .2s ease;
+}
+.brand-directory-filter:hover,
+.brand-directory-filter:focus-visible {
+    color: #1d1d1f;
+    border-color: rgba(29, 29, 31, .3);
+    box-shadow: 0 5px 15px rgba(29, 29, 31, .06);
+    outline: none;
+}
+.brand-directory-filter.is-active {
+    color: #fff;
+    border-color: #1d1d1f;
+    background: #1d1d1f;
+}
+.brand-directory-filter-count {
+    display: inline-grid;
+    min-width: 25px;
+    height: 25px;
+    place-items: center;
+    padding-inline: 5px;
+    border-radius: 999px;
+    color: #65656b;
+    background: #f2f2f4;
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1;
+}
+.brand-directory-filter.is-active .brand-directory-filter-count {
+    color: #1d1d1f;
+    background: #fff;
+}
+.brand-directory-results {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 22px;
+}
+.brand-directory-results h2 { color: #1d1d1f; font-size: clamp(20px, 2.2vw, 28px); font-weight: 650; line-height: 1.5; }
+.brand-directory-results > span { flex: 0 0 auto; color: #6e6e73; font-size: 12px; }
+.brand-card-category { color: #74747a; font-size: 10px; font-weight: 500; line-height: 1.6; }
+@media (max-width: 620px) {
+    .brand-directory-filters { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 26px; }
+    .brand-directory-filter { min-width: 0; min-height: 48px; padding: 9px 10px; border-radius: 14px; font-size: 11px; }
+    .brand-directory-filter--all { grid-column: 1 / -1; }
+    .brand-directory-results { align-items: flex-start; flex-direction: column; gap: 4px; margin-bottom: 17px; }
+    .brand-directory-results h2 { font-size: 21px; }
+    .brand-directory-results > span { font-size: 11px; }
+}

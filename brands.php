@@ -4,7 +4,20 @@ declare(strict_types=1);
 require_once __DIR__ . '/app/bootstrap.php';
 
 $data = load_site_data($pdo);
-$brands = array_values(array_filter($data['brands'], static fn(array $brand): bool => !empty($brand['is_published'])));
+$allBrands = array_values(array_filter($data['brands'], static fn(array $brand): bool => !empty($brand['is_published'])));
+$categoryOptions = brand_category_options();
+$categoryCounts = array_fill_keys(array_keys($categoryOptions), 0);
+foreach ($allBrands as &$brand) {
+    $brand['category'] = normalize_brand_category($brand['category'] ?? '');
+    $categoryCounts[$brand['category']]++;
+}
+unset($brand);
+$categoryQuery = $_GET['category'] ?? '';
+$requestedCategory = is_string($categoryQuery) ? trim($categoryQuery) : '';
+$selectedCategory = array_key_exists($requestedCategory, $categoryOptions) ? $requestedCategory : '';
+$brands = $selectedCategory === ''
+    ? $allBrands
+    : array_values(array_filter($allBrands, static fn(array $brand): bool => $brand['category'] === $selectedCategory));
 $settings = $data['settings'];
 $directoryTitle = 'همهٔ برندهای همکار | ' . (string) $settings['brand_name'];
 $directoryDescription = 'فهرست برندهای منتشرشده و صفحهٔ معرفی و آرشیو هرکدام در ' . (string) $settings['brand_name'] . '.';
@@ -31,7 +44,7 @@ $customFontFormat = match (strtolower(pathinfo($customFontPath, PATHINFO_EXTENSI
     <title><?= e($directoryTitle) ?></title>
     <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/site.css">
+    <link rel="stylesheet" href="<?= e(static_asset_url('assets/css/site.css')) ?>">
     <style>
         :root{--teal:<?= e($primary) ?>;--clay:<?= e($accent) ?>;--saffron:<?= e($saffron) ?>;--paper:<?= e($surface) ?>;}
         <?php if ($customFontPath !== ''): ?>
@@ -39,7 +52,7 @@ $customFontFormat = match (strtolower(pathinfo($customFontPath, PATHINFO_EXTENSI
         :root{--font:'NegaahCustom','Vazirmatn',Tahoma,sans-serif;}
         <?php endif; ?>
     </style>
-    <script defer src="assets/js/site.js"></script>
+    <script defer src="<?= e(static_asset_url('assets/js/site.js')) ?>"></script>
 </head>
 <body>
     <div class="scroll-progress" aria-hidden="true"><span></span></div>
@@ -56,11 +69,18 @@ $customFontFormat = match (strtolower(pathinfo($customFontPath, PATHINFO_EXTENSI
                 <div class="eyebrow"><span class="eyebrow-mark"></span>آرشیو برندهای همکار</div>
                 <h1>همهٔ برندهای هم‌مسیر</h1>
                 <p>هر برند، روایتی مستقل از یک مسیر مشترک است. برای دیدن معرفی و آرشیو هر برند، کارت آن را باز کنید.</p>
-                <span class="brand-directory-count"><?= fa_num((string) count($brands)) ?> برند منتشرشده</span>
+                <span class="brand-directory-count"><?= fa_num((string) count($allBrands)) ?> برند منتشرشده</span>
             </div>
         </section>
-        <section class="brand-directory-section section-space" aria-label="فهرست همهٔ برندها">
+        <section class="brand-directory-section section-space" id="brand-directory" aria-label="فهرست همهٔ برندها">
             <div class="container">
+                <nav class="brand-directory-filters" aria-label="دسته‌بندی برندها">
+                    <a class="brand-directory-filter brand-directory-filter--all<?= $selectedCategory === '' ? ' is-active' : '' ?>" href="brands.php#brand-directory"<?= $selectedCategory === '' ? ' aria-current="page"' : '' ?>><span>همهٔ برندها</span><small class="brand-directory-filter-count"><?= fa_num((string) count($allBrands)) ?></small></a>
+                    <?php foreach ($categoryOptions as $categoryKey => $categoryLabel): ?>
+                        <a class="brand-directory-filter<?= $selectedCategory === $categoryKey ? ' is-active' : '' ?>" href="brands.php?category=<?= e(rawurlencode($categoryKey)) ?>#brand-directory"<?= $selectedCategory === $categoryKey ? ' aria-current="page"' : '' ?>><span><?= e($categoryLabel) ?></span><small class="brand-directory-filter-count"><?= fa_num((string) $categoryCounts[$categoryKey]) ?></small></a>
+                    <?php endforeach; ?>
+                </nav>
+                <div class="brand-directory-results"><h2><?= e($selectedCategory === '' ? 'همهٔ برندها' : $categoryOptions[$selectedCategory]) ?></h2><span><?= fa_num((string) count($brands)) ?> برند در این فهرست</span></div>
                 <?php if ($brands !== []): ?>
                     <div class="partners-grid brand-directory-grid">
                         <?php foreach ($brands as $index => $brand): ?>
@@ -69,12 +89,12 @@ $customFontFormat = match (strtolower(pathinfo($customFontPath, PATHINFO_EXTENSI
                                 <span class="partner-preview">
                                     <?php if ($previewImage !== ''): ?><img src="<?= e($previewImage) ?>" alt="پیش‌نمایش برند <?= e($brand['name']) ?>" loading="lazy"><?php else: ?><span class="partner-preview-empty"><small>پیش‌نمایش از پنل اضافه می‌شود</small></span><?php endif; ?>
                                 </span>
-                                <span class="partner-card-details"><span class="partner-card-topline"><span class="partner-number" dir="ltr">NO. <?= fa_num(str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT)) ?></span><span class="partner-visit"><?= icon_svg('arrow-left') ?><span>مشاهده صفحه</span></span></span><span class="partner-card-copy"><span class="partner-name"><?= e($brand['name']) ?></span><?php if (trim((string) ($brand['short_description'] ?? '')) !== ''): ?><small class="partner-short-description"><?= e($brand['short_description']) ?></small><?php endif; ?></span></span>
+                                <span class="partner-card-details"><span class="partner-card-topline"><span class="partner-number" dir="ltr">NO. <?= fa_num(str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT)) ?></span><span class="partner-visit"><?= icon_svg('arrow-left') ?><span>مشاهده صفحه</span></span></span><span class="partner-card-copy"><small class="brand-card-category"><?= e($categoryOptions[$brand['category']]) ?></small><span class="partner-name"><?= e($brand['name']) ?></span><?php if (trim((string) ($brand['short_description'] ?? '')) !== ''): ?><small class="partner-short-description"><?= e($brand['short_description']) ?></small><?php endif; ?></span></span>
                             </a>
                         <?php endforeach; ?>
                     </div>
                 <?php else: ?>
-                    <div class="partners-empty"><strong>در حال حاضر برندی برای نمایش منتشر نشده است.</strong></div>
+                    <div class="partners-empty"><strong><?= $selectedCategory === '' ? 'در حال حاضر برندی برای نمایش منتشر نشده است.' : 'هنوز برندی در این دسته ثبت نشده است.' ?></strong></div>
                 <?php endif; ?>
             </div>
         </section>
