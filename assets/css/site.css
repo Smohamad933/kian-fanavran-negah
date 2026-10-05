@@ -1205,7 +1205,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
     min-width: 0;
     min-height: 112px;
     place-items: center;
-    padding: 20px 16px;
+    padding: 15px 16px;
     overflow: hidden;
     color: var(--ink);
     background: var(--white);
@@ -1215,7 +1215,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 .partner-logo-art {
     display: grid;
     width: min(100%, 230px);
-    height: 70px;
+    height: 82px;
     place-items: center;
     transition: opacity .36s cubic-bezier(.22, .61, .36, 1), filter .36s cubic-bezier(.22, .61, .36, 1), transform .36s cubic-bezier(.22, .61, .36, 1);
 }
@@ -1224,7 +1224,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
     width: auto;
     height: auto;
     max-width: 86%;
-    max-height: 58px;
+    max-height: 72px;
     object-fit: contain;
     filter: grayscale(.72);
     opacity: .78;
@@ -1259,13 +1259,15 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 }
 @media (max-width: 620px) {
     .partners-logo-grid { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
-    .partner-logo-cell { min-height: 94px; padding: 14px 10px; }
-    .partner-logo-art { height: 58px; }
-    .partner-logo-cell img { max-height: 46px; }
+    .partner-logo-cell { min-height: 94px; padding: 10px 10px; }
+    .partner-logo-art { height: 68px; }
+    .partner-logo-cell img { max-height: 60px; }
 }
 @media (max-width: 420px) {
     .partners-logo-grid { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
-    .partner-logo-cell { min-height: 86px; }
+    .partner-logo-cell { min-height: 86px; padding: 8px 10px; }
+    .partner-logo-art { height: 60px; }
+    .partner-logo-cell img { max-height: 52px; }
 }
 @media (prefers-reduced-motion: no-preference) {
     body.has-js .partner-logo-cell[data-logo-reserve] { display: none; }
