@@ -96,9 +96,6 @@ $customFontFormat = match (strtolower(pathinfo($customFontPath, PATHINFO_EXTENSI
                     <div class="hero-image-frame">
                         <img src="<?= e(safe_image_src($settings['hero_image'], 'assets/img/hero-persian-campaign.webp')) ?>" alt="چیدمان هنری با الهام از معماری و رنگ‌های ایرانی" fetchpriority="high">
                     </div>
-                    <div class="hero-art-caption"><span class="caption-index">۰۱</span><span>نگاهی نو به امکان‌های تازه</span><span class="caption-rule"></span></div>
-                    <div class="hero-stamp" aria-label="ایده، هویت، رشد"><span>ایده</span><i></i><span>هویت</span><i></i><span>رشد</span><b>ن</b></div>
-                    <div class="hero-floating-note"><span class="note-star">✳</span><span>نگاه متفاوت،<br><b>نتیجهٔ متفاوت.</b></span></div>
                     <span class="hero-ornament hero-ornament-one" aria-hidden="true"></span>
                     <span class="hero-ornament hero-ornament-two" aria-hidden="true"></span>
                 </div>
@@ -109,7 +106,6 @@ $customFontFormat = match (strtolower(pathinfo($customFontPath, PATHINFO_EXTENSI
                 <div class="stat-item"><strong><?= e($settings['stat_growth']) ?></strong><span><?= e($settings['stat_growth_label']) ?></span></div>
                 <div class="stat-note"><span class="stat-sun">✳</span><span><?= e($settings['stat_note']) ?></span></div>
             </div>
-            <div class="container hero-bottom-line"><span>استراتژی</span><i></i><span>روایت</span><i></i><span>طراحی</span><i></i><span>رشد</span><span class="hero-bottom-side">۰۱ / ۰۶</span></div>
         </section>
 
         <section class="services-section section-space" id="services">
@@ -143,7 +139,7 @@ $customFontFormat = match (strtolower(pathinfo($customFontPath, PATHINFO_EXTENSI
                         <div class="eyebrow"><span class="eyebrow-mark"></span><?= e($settings['portfolio_eyebrow']) ?></div>
                         <h2><?= e($settings['portfolio_title']) ?></h2>
                     </div>
-                    <div class="heading-side"><p><?= e($settings['portfolio_description']) ?></p><div class="portfolio-controls" aria-label="فیلتر نمونه‌کارها"><button class="portfolio-filter is-active" type="button" data-filter="all">همه</button><button class="portfolio-filter" type="button" data-filter="brand">هویت برند</button><button class="portfolio-filter" type="button" data-filter="digital">دیجیتال</button><button class="portfolio-filter" type="button" data-filter="campaign">کمپین</button></div></div>
+                    <div class="portfolio-heading-tools"><div class="portfolio-controls" aria-label="فیلتر نمونه‌کارها"><button class="portfolio-filter is-active" type="button" data-filter="all">همه</button><button class="portfolio-filter" type="button" data-filter="brand">هویت برند</button><button class="portfolio-filter" type="button" data-filter="digital">دیجیتال</button><button class="portfolio-filter" type="button" data-filter="campaign">کمپین</button></div></div>
                 </div>
                 <div class="portfolio-grid">
                     <?php foreach ($projects as $index => $project): ?>
@@ -186,7 +182,7 @@ $customFontFormat = match (strtolower(pathinfo($customFontPath, PATHINFO_EXTENSI
                         <div class="eyebrow"><span class="eyebrow-mark"></span><?= e($settings['partners_eyebrow']) ?></div>
                         <h2><?= e($settings['partners_title']) ?></h2>
                     </div>
-                    <div class="heading-side partners-heading-side"><p><?= e($settings['partners_description']) ?></p><div class="partners-heading-actions"><span class="partners-count"><b><?= fa_num((string) count($featuredBrands)) ?></b><small>برند منتخب</small></span><a class="partners-all-link" href="brands.php">مشاهدهٔ همهٔ برندها <?= icon_svg('arrow-left') ?></a></div></div>
+                    <div class="partners-heading-side"><a class="partners-all-link" href="brands.php">همهٔ برندها <?= icon_svg('arrow-left') ?></a></div>
                 </div>
                 <?php if ($featuredBrands !== []): ?>
                     <div class="partners-grid">
@@ -275,7 +271,6 @@ $customFontFormat = match (strtolower(pathinfo($customFontPath, PATHINFO_EXTENSI
             <div class="container">
                 <div class="section-heading section-heading-split" data-reveal>
                     <div><div class="eyebrow"><span class="eyebrow-mark"></span><?= e($settings['journal_eyebrow']) ?></div><h2><?= e($settings['journal_title']) ?></h2></div>
-                    <div class="heading-side"><p><?= e($settings['journal_description']) ?></p><a class="round-link" href="#contact" aria-label="ارتباط با ما"><?= icon_svg('arrow-left') ?></a></div>
                 </div>
                 <div class="journal-grid">
                     <?php foreach (array_slice($articles, 0, 3) as $index => $article): ?>

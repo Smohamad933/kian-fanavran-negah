@@ -31,11 +31,9 @@ function default_settings(): array
         'portfolio_cta' => 'پروژه بعدی را با هم بسازیم',
         'partners_eyebrow' => 'اعتمادهای دوطرفه',
         'partners_title' => 'برندهایی که هم‌مسیر نگاه‌اند',
-        'partners_description' => 'آرشیوی از همراهی‌ها؛ هر نام، دریچه‌ای به روایت، بازخورد و محتوای همان برند است.',
         'about_button_label' => 'بیشتر با هم آشنا شویم',
         'testimonials_intro' => 'بهترین نشانِ کار خوب، حرف کسانی‌ست که در این مسیر کنارمان بوده‌اند.',
         'testimonials_disclaimer' => 'دیدگاه‌ها فقط با اجازهٔ صاحبان نظر منتشر می‌شوند.',
-        'journal_description' => 'یادداشت‌های کوتاه ما درباره برند، تبلیغات و تجربه‌های دیجیتال.',
         'contact_form_title' => 'از اینجا شروع کنیم',
         'contact_form_subtitle' => 'پاسخ‌گویی در اولین فرصت',
         'contact_form_name_label' => 'نام و نام خانوادگی',
@@ -70,7 +68,6 @@ function default_settings(): array
         'services_description' => 'هر نقطه تماس برند شما، فرصتی‌ست برای ساختن یک تجربه بهتر. ما این فرصت‌ها را با نگاه استراتژیک و اجرای خلاق به هم وصل می‌کنیم.',
         'portfolio_eyebrow' => 'قصه‌هایی که ساخته‌ایم',
         'portfolio_title' => 'چند قاب از نگاه ما',
-        'portfolio_description' => 'هر همکاری، یک مسئله تازه و یک فرصت برای ساختن چیزی ماندگار است.',
         'about_eyebrow' => 'نگاه ما به ماجرا',
         'about_title' => "خلاقیت، وقتی\nاثرگذار است که\nجهت داشته باشد.",
         'about_description' => 'ما یک تیم مستقل از استراتژیست‌ها، طراحان و سازندگانیم؛ با یک باور مشترک: تبلیغات خوب فقط دیده نمی‌شود، چیزی را در رفتار و ذهن مخاطب تغییر می‌دهد.',
@@ -265,14 +262,12 @@ function content_groups(): array
         'بخش نمونه‌کارها' => [
             ['key' => 'portfolio_eyebrow', 'label' => 'برچسب بخش', 'type' => 'text'],
             ['key' => 'portfolio_title', 'label' => 'عنوان بخش', 'type' => 'text'],
-            ['key' => 'portfolio_description', 'label' => 'توضیح بخش', 'type' => 'textarea'],
             ['key' => 'portfolio_note', 'label' => 'یادداشت پایین نمونه‌کارها', 'type' => 'text'],
             ['key' => 'portfolio_cta', 'label' => 'متن پیوند پایانی', 'type' => 'text'],
         ],
         'برندهای همکار' => [
             ['key' => 'partners_eyebrow', 'label' => 'برچسب بخش', 'type' => 'text'],
             ['key' => 'partners_title', 'label' => 'عنوان بخش', 'type' => 'text'],
-            ['key' => 'partners_description', 'label' => 'توضیح بخش', 'type' => 'textarea'],
         ],
         'درباره نگاه' => [
             ['key' => 'about_eyebrow', 'label' => 'برچسب بخش', 'type' => 'text'],
@@ -305,7 +300,6 @@ function content_groups(): array
         'دفترچه نگاه' => [
             ['key' => 'journal_eyebrow', 'label' => 'برچسب بخش', 'type' => 'text'],
             ['key' => 'journal_title', 'label' => 'عنوان بخش', 'type' => 'text'],
-            ['key' => 'journal_description', 'label' => 'توضیح بخش', 'type' => 'textarea'],
         ],
         'تماس و همکاری' => [
             ['key' => 'contact_eyebrow', 'label' => 'برچسب بخش', 'type' => 'text'],
