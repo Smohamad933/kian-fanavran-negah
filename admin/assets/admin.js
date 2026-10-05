@@ -17,6 +17,40 @@ document.querySelectorAll('.admin-nav a.is-active').forEach((activeLink) => {
   }
 });
 
+const adminListTools = document.querySelector('[data-admin-list-tools]');
+if (adminListTools) {
+  const rows = Array.from(document.querySelectorAll('[data-admin-list-row]'));
+  const searchInput = adminListTools.querySelector('[data-admin-list-search]');
+  const statusFilter = adminListTools.querySelector('[data-admin-list-status]');
+  const categoryFilter = adminListTools.querySelector('[data-admin-list-category]');
+  const countLabel = adminListTools.querySelector('[data-admin-list-count]');
+  const emptyRow = document.querySelector('[data-admin-list-empty]');
+  const formatNumber = (number) => new Intl.NumberFormat('fa-IR').format(number);
+
+  const filterAdminList = () => {
+    const query = (searchInput?.value || '').trim().toLocaleLowerCase();
+    const status = statusFilter?.value || '';
+    const category = categoryFilter?.value || '';
+    let visibleCount = 0;
+
+    rows.forEach((row) => {
+      const matchesQuery = !query || row.textContent.toLocaleLowerCase().includes(query);
+      const matchesStatus = status === '' || row.dataset.published === status;
+      const matchesCategory = category === '' || row.dataset.category === category;
+      row.hidden = !(matchesQuery && matchesStatus && matchesCategory);
+      if (!row.hidden) visibleCount += 1;
+    });
+
+    if (emptyRow) emptyRow.hidden = visibleCount > 0;
+    if (countLabel) countLabel.textContent = `نمایش ${formatNumber(visibleCount)} از ${formatNumber(rows.length)} مورد`;
+  };
+
+  searchInput?.addEventListener('input', filterAdminList);
+  statusFilter?.addEventListener('change', filterAdminList);
+  categoryFilter?.addEventListener('change', filterAdminList);
+  filterAdminList();
+}
+
 document.querySelectorAll('[data-slide-sortable]').forEach((list) => {
   let activeItem = null;
   let startX = 0;

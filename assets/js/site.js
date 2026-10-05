@@ -131,8 +131,8 @@
   if (logoWall && logoPoolNode && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
     let logoPool = [];
     try { logoPool = JSON.parse(logoPoolNode.textContent || '[]'); } catch (error) { logoPool = []; }
-    const logoSlots = Array.from(logoWall.querySelectorAll('[data-logo-slot]'));
-    if (logoSlots.length > 1 && logoPool.length > 1) {
+    const logoSlots = Array.from(logoWall.querySelectorAll('[data-logo-slot]:not([data-logo-reserve])'));
+    if (logoSlots.length > 1 && logoPool.length > logoSlots.length) {
       const visibleLogos = logoSlots.map((slot) => logoPool[Number(slot.dataset.logoIndex)]).filter(Boolean);
       const waitingLogos = logoPool.slice(logoSlots.length);
       let lastSlotIndex = -1;
@@ -167,40 +167,31 @@
           art.appendChild(makeWordmark(brand.name || ''));
         }
       };
-      const transitionLogos = (changes) => {
+      const transitionLogo = (slot, brand) => {
         if (isChanging) return;
         isChanging = true;
-        changes.forEach(([slot]) => slot.classList.add('is-swapping'));
+        slot.classList.add('is-swapping');
         window.setTimeout(() => {
-          changes.forEach(([slot, brand]) => applyLogo(slot, brand));
+          applyLogo(slot, brand);
           window.requestAnimationFrame(() => {
-            changes.forEach(([slot]) => slot.classList.remove('is-swapping'));
+            slot.classList.remove('is-swapping');
             isChanging = false;
           });
-        }, 300);
+        }, 360);
       };
       const rotateLogos = () => {
-        if (document.hidden || isChanging || logoWall.matches(':hover') || logoWall.contains(document.activeElement)) return;
-        if (waitingLogos.length > 0) {
-          let slotIndex = Math.floor(Math.random() * logoSlots.length);
-          if (slotIndex === lastSlotIndex) slotIndex = (slotIndex + 1) % logoSlots.length;
-          lastSlotIndex = slotIndex;
-          const incoming = waitingLogos.shift();
-          waitingLogos.push(visibleLogos[slotIndex]);
-          visibleLogos[slotIndex] = incoming;
-          transitionLogos([[logoSlots[slotIndex], incoming]]);
-          return;
-        }
-        const firstIndex = Math.floor(Math.random() * logoSlots.length);
-        const offset = 1 + Math.floor(Math.random() * (logoSlots.length - 1));
-        const secondIndex = (firstIndex + offset) % logoSlots.length;
-        const firstLogo = visibleLogos[firstIndex];
-        const secondLogo = visibleLogos[secondIndex];
-        visibleLogos[firstIndex] = secondLogo;
-        visibleLogos[secondIndex] = firstLogo;
-        transitionLogos([[logoSlots[firstIndex], secondLogo], [logoSlots[secondIndex], firstLogo]]);
+        if (document.hidden || window.matchMedia('(prefers-reduced-motion: reduce)').matches || isChanging || logoWall.matches(':hover') || logoWall.contains(document.activeElement)) return;
+        let slotIndex = Math.floor(Math.random() * logoSlots.length);
+        if (slotIndex === lastSlotIndex) slotIndex = (slotIndex + 1) % logoSlots.length;
+        const incoming = waitingLogos.shift();
+        const outgoing = visibleLogos[slotIndex];
+        if (!incoming || !outgoing) return;
+        lastSlotIndex = slotIndex;
+        waitingLogos.push(outgoing);
+        visibleLogos[slotIndex] = incoming;
+        transitionLogo(logoSlots[slotIndex], incoming);
       };
-      window.setInterval(rotateLogos, 3800);
+      window.setInterval(rotateLogos, 5200);
     }
   }
 })();

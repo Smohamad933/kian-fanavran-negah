@@ -20,6 +20,8 @@ foreach ($featuredBrands as $featuredBrand) {
     ];
 }
 $partnerLogoData = json_encode($partnerLogoBrands, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?: '[]';
+$partnerLogoCount = count($partnerLogoBrands);
+$partnerLogoReserveIndex = $partnerLogoCount > 2 && $partnerLogoCount <= 18 ? $partnerLogoCount - 1 : -1;
 ?>
 <!doctype html>
 <html lang="fa" dir="rtl">
@@ -199,8 +201,8 @@ $partnerLogoData = json_encode($partnerLogoBrands, JSON_UNESCAPED_UNICODE | JSON
                 <?php if ($partnerLogoBrands !== []): ?>
                     <div class="partners-logo-panel">
                         <div class="partners-logo-grid" data-logo-wall role="group" aria-label="لوگوهای برندهای منتخب">
-                            <?php foreach (array_slice($partnerLogoBrands, 0, 18) as $partner): ?>
-                                <a class="partner-logo-cell" data-logo-slot data-logo-index="<?= e((string) $partner['index']) ?>" href="<?= e($partner['href']) ?>" title="<?= e($partner['name']) ?>" aria-label="مشاهدهٔ صفحهٔ <?= e($partner['name']) ?>">
+                            <?php foreach (array_slice($partnerLogoBrands, 0, 18) as $partnerIndex => $partner): ?>
+                                <a class="partner-logo-cell" data-logo-slot<?= $partnerIndex === $partnerLogoReserveIndex ? ' data-logo-reserve' : '' ?> data-logo-index="<?= e((string) $partner['index']) ?>" href="<?= e($partner['href']) ?>" title="<?= e($partner['name']) ?>" aria-label="مشاهدهٔ صفحهٔ <?= e($partner['name']) ?>">
                                     <span class="partner-logo-art" data-logo-art>
                                         <?php if ($partner['logo'] !== ''): ?><img src="<?= e($partner['logo']) ?>" alt="<?= e($partner['name']) ?>" loading="lazy" decoding="async"><?php else: ?><span class="partner-logo-wordmark"><?= e($partner['name']) ?></span><?php endif; ?>
                                     </span>
