@@ -62,7 +62,7 @@ $partnerLogoReserveIndex = $partnerLogoCount > 2 && $partnerLogoCount <= 18 ? $p
     </style>
     <script defer src="<?= e(static_asset_url('assets/js/site.js')) ?>"></script>
 </head>
-<body>
+<body class="site-public">
     <div class="scroll-progress" aria-hidden="true"><span></span></div>
     <header class="site-header" id="top">
         <div class="container header-inner">

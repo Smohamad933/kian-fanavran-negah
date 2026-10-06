@@ -81,7 +81,7 @@ $customFontFormat = match (strtolower(pathinfo($customFontPath, PATHINFO_EXTENSI
         <?php endif; ?>
     </style>
 </head>
-<body>
+<body class="site-public">
     <header class="site-header"><div class="container header-inner"><a class="brand" href="index.php"><span class="brand-symbol" aria-hidden="true"><svg viewBox="0 0 46 46" fill="none"><path d="M4 23C9.6 14.9 16 10.8 23 10.8S36.4 14.9 42 23c-5.6 8.1-12 12.2-19 12.2S9.6 31.1 4 23Z" stroke="currentColor" stroke-width="1.8"/><circle cx="23" cy="23" r="5.7" fill="currentColor"/></svg></span><span class="brand-wordmark"><strong><?= e($settings['brand_name']) ?></strong><small><?= e($settings['brand_descriptor']) ?></small></span></a><a class="header-contact" href="index.php#contact"><span>ارتباط با ما</span><?= icon_svg('arrow-left') ?></a></div></header>
     <main>
         <?php if ($article): ?>
