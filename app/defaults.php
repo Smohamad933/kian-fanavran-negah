@@ -74,6 +74,8 @@ function default_settings(): array
         'portfolio_cta' => 'پروژه بعدی را با هم بسازیم',
         'partners_eyebrow' => 'اعتمادهای دوطرفه',
         'partners_title' => 'برندهایی که هم‌مسیر نگاه‌اند',
+        'partner_logo_interval' => '12',
+        'partner_logo_batch_size' => '3',
         'about_button_label' => 'بیشتر با هم آشنا شویم',
         'testimonials_intro' => 'بهترین نشانِ کار خوب، حرف کسانی‌ست که در این مسیر کنارمان بوده‌اند.',
         'testimonials_disclaimer' => 'دیدگاه‌ها فقط با اجازهٔ صاحبان نظر منتشر می‌شوند.',
@@ -312,6 +314,8 @@ function content_groups(): array
         'برندهای همکار' => [
             ['key' => 'partners_eyebrow', 'label' => 'برچسب بخش', 'type' => 'text'],
             ['key' => 'partners_title', 'label' => 'عنوان بخش', 'type' => 'text'],
+            ['key' => 'partner_logo_interval', 'label' => 'فاصلهٔ تعویض لوگوها (ثانیه)', 'type' => 'number', 'min' => 5, 'max' => 120, 'hint' => 'مثلاً ۱۲ ثانیه؛ عددی بین ۵ تا ۱۲۰ وارد کنید.'],
+            ['key' => 'partner_logo_batch_size', 'label' => 'تعداد لوگو در هر نوبت', 'type' => 'number', 'min' => 1, 'max' => 5, 'hint' => 'تعداد جایگاه‌هایی که هم‌زمان و تصادفی عوض می‌شوند (۱ تا ۵).'],
         ],
         'درباره نگاه' => [
             ['key' => 'about_eyebrow', 'label' => 'برچسب بخش', 'type' => 'text'],

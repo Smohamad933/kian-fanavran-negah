@@ -200,11 +200,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($action === 'save_content') {
             $defaults = default_settings();
+            $numericBounds = [
+                'partner_logo_interval' => [5, 120],
+                'partner_logo_batch_size' => [1, 5],
+            ];
             $upsert = $pdo->prepare('INSERT INTO site_settings (setting_key, setting_value) VALUES (:setting_key, :setting_value) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)');
             foreach ($defaults as $key => $fallback) {
                 if (!array_key_exists($key, $_POST['settings'] ?? [])) continue;
                 $value = trim((string) $_POST['settings'][$key]);
-                if ($key === 'custom_font_path') {
+                if (isset($numericBounds[$key])) {
+                    [$minimum, $maximum] = $numericBounds[$key];
+                    $number = filter_var($value, FILTER_VALIDATE_INT);
+                    $value = (string) max($minimum, min($maximum, $number === false ? (int) $fallback : $number));
+                } elseif ($key === 'custom_font_path') {
                     $value = safe_font_src($value);
                 } elseif (in_array($key, ['footer_show_admin_login', 'footer_show_source_link', 'footer_show_credit'], true)) {
                     $value = $value === '1' ? '1' : '0';
@@ -690,12 +698,12 @@ function render_admin_field(string $column, array $field, array $item, array $sl
                         <?php if ($recentInquiries === []): ?><div class="empty-state"><span>✳</span><strong>هنوز پیامی ندارید</strong><p>پیام‌های فرم تماس سایت، اینجا نمایش داده می‌شوند.</p></div>
                         <?php else: ?><div class="recent-list"><?php foreach ($recentInquiries as $inquiry): ?><a href="index.php?page=inquiries" class="recent-row"><span class="recent-dot <?= e($inquiry['status']) ?>"></span><span class="recent-name"><strong><?= e($inquiry['name']) ?></strong><small><?= e($inquiry['subject'] ?: 'درخواست مشاوره') ?></small></span><span class="recent-phone" dir="ltr"><?= e($inquiry['phone']) ?></span><span class="recent-date"><?= e(date('Y/m/d', strtotime((string) $inquiry['created_at']))) ?></span><?= icon_svg('arrow-left') ?></a><?php endforeach; ?></div><?php endif; ?>
                     </section>
-                    <section class="admin-card quick-card"><div class="admin-card-heading"><div><span class="admin-kicker">دسترسی سریع</span><h2>از کجا شروع کنیم؟</h2></div></div><div class="quick-links"><a href="index.php?page=content"><span class="quick-icon">✳</span><span><strong>ویرایش صفحهٔ اصلی</strong><small>تیترها، رنگ‌ها و اطلاعات برند</small></span><?= icon_svg('arrow-left') ?></a><a href="index.php?page=projects&action=new"><span class="quick-icon">↗</span><span><strong>افزودن نمونه‌کار</strong><small>یک روایت تازه به ویترین اضافه کنید</small></span><?= icon_svg('arrow-left') ?></a><a href="index.php?page=articles&action=new"><span class="quick-icon">✎</span><span><strong>نوشتن یادداشت</strong><small>فکرهای تازه‌تان را منتشر کنید</small></span><?= icon_svg('arrow-left') ?></a><a href="index.php?page=brands"><span class="quick-icon">◎</span><span><strong>مدیریت برندهای همکار</strong><small>دسته‌بندی، لوگو و نمایش در خانه</small></span><?= icon_svg('arrow-left') ?></a><a href="index.php?page=seo"><span class="quick-icon">◎</span><span><strong>بررسی سئو و Google</strong><small>دامنه، توضیحات و گزارش جست‌وجو</small></span><?= icon_svg('arrow-left') ?></a></div></section>
+                    <section class="admin-card quick-card"><div class="admin-card-heading"><div><span class="admin-kicker">دسترسی سریع</span><h2>از کجا شروع کنیم؟</h2></div></div><div class="quick-links"><a href="index.php?page=content"><span class="quick-icon">✳</span><span><strong>ویرایش صفحهٔ اصلی</strong><small>تیترها، رنگ‌ها و اطلاعات برند</small></span><?= icon_svg('arrow-left') ?></a><a href="index.php?page=projects&action=new"><span class="quick-icon">↗</span><span><strong>افزودن نمونه‌کار</strong><small>یک روایت تازه به ویترین اضافه کنید</small></span><?= icon_svg('arrow-left') ?></a><a href="index.php?page=articles&action=new"><span class="quick-icon">✎</span><span><strong>نوشتن یادداشت</strong><small>فکرهای تازه‌تان را منتشر کنید</small></span><?= icon_svg('arrow-left') ?></a><a href="index.php?page=brands"><span class="quick-icon">◎</span><span><strong>مدیریت برندهای همکار</strong><small>دسته‌بندی، لوگو و اولویت دیوار خانه</small></span><?= icon_svg('arrow-left') ?></a><a href="index.php?page=seo"><span class="quick-icon">◎</span><span><strong>بررسی سئو و Google</strong><small>دامنه، توضیحات و گزارش جست‌وجو</small></span><?= icon_svg('arrow-left') ?></a></div></section>
                 </div>
                 <div class="admin-note"><span>!</span><p><strong>پیش از انتشار:</strong> نمونه‌کارهای اولیه مفهومی‌اند. دیدگاه مشتری را فقط با متن واقعی و اجازهٔ انتشار وارد کنید؛ دیدگاه‌های نمایشی قدیمی در سایت عمومی پنهان شده‌اند.</p></div>
 
             <?php elseif ($page === 'content'): ?>
-                <div class="content-intro"><div><span class="admin-kicker">همه‌چیز در یک نگاه</span><h2>خانهٔ نگاه را به زبان خودتان بنویسید.</h2><p>متن هر بخش، پیوندها، راه‌های تماس و رنگ‌های سایت را از همین‌جا تغییر دهید. برای محتوای تکرارشونده از بخش‌های جداگانهٔ خدمات، نمونه‌کار و یادداشت‌ها استفاده کنید.</p></div><span class="content-intro-mark">ن</span></div>
+                <div class="content-intro"><div><span class="admin-kicker">همه‌چیز در یک نگاه</span><h2>خانهٔ نگاه را به زبان خودتان بنویسید.</h2><p>متن هر بخش، پیوندها، راه‌های تماس و رنگ‌های سایت را از همین‌جا تغییر دهید؛ فاصله و تعداد لوگوهای چرخشی را هم در تنظیمات برندهای همکار انتخاب کنید. برای محتوای تکرارشونده از بخش‌های جداگانهٔ خدمات، نمونه‌کار و یادداشت‌ها استفاده کنید.</p></div><span class="content-intro-mark">ن</span></div>
                 <form class="content-editor" method="post" enctype="multipart/form-data">
                     <?= csrf_field() ?><input type="hidden" name="action" value="save_content"><input type="hidden" name="return_page" value="content">
                     <?php foreach (content_groups() as $groupTitle => $fields): ?>
@@ -706,6 +714,7 @@ function render_admin_field(string $column, array $field, array $item, array $sl
                                         <span><?= e($field['label']) ?></span>
                                         <?php if ($field['type'] === 'textarea'): ?><textarea name="settings[<?= e($field['key']) ?>]" rows="3"><?= e($value) ?></textarea>
                                         <?php elseif ($field['type'] === 'color'): ?><span class="color-control"><input type="color" name="settings[<?= e($field['key']) ?>]" value="<?= e(safe_color($value, '#155C5A')) ?>"><input type="text" value="<?= e(safe_color($value, '#155C5A')) ?>" readonly dir="ltr"></span>
+                                        <?php elseif ($field['type'] === 'number'): ?><input type="number" name="settings[<?= e($field['key']) ?>]" value="<?= e($value) ?>" min="<?= e((string) ($field['min'] ?? 0)) ?>" max="<?= e((string) ($field['max'] ?? 999)) ?>" step="1" inputmode="numeric" dir="ltr">
                                         <?php elseif ($field['type'] === 'toggle'): ?><span class="admin-toggle-setting"><input type="hidden" name="settings[<?= e($field['key']) ?>]" value="0"><input type="checkbox" name="settings[<?= e($field['key']) ?>]" value="1"<?= (string) $value === '1' ? ' checked' : '' ?>><small>پس از ذخیره اعمال می‌شود</small></span>
                                         <?php elseif ($field['type'] === 'font'): ?>
                                             <?php $fontValue = safe_font_src($value); ?>
@@ -714,6 +723,7 @@ function render_admin_field(string $column, array $field, array $item, array $sl
                                             <?php if ($fontValue !== ''): ?><span class="check-label"><input type="checkbox" name="remove_custom_font" value="1"> حذف فونت اختصاصی</span><?php endif; ?>
                                         <?php else: ?><input type="text" name="settings[<?= e($field['key']) ?>]" value="<?= e($value) ?>"<?= str_ends_with($field['key'], '_url') || str_starts_with($field['key'], 'social_') ? ' dir="ltr"' : '' ?>><?php endif; ?>
                                         <?php if ($field['key'] === 'hero_image'): ?><span class="upload-setting"><small>یا تصویر اصلی را از رایانه بارگذاری کنید</small><input type="file" name="hero_upload" accept="image/jpeg,image/png,image/webp,image/gif"></span><?php endif; ?>
+                                        <?php if (!empty($field['hint'])): ?><small class="field-hint"><?= e($field['hint']) ?></small><?php endif; ?>
                                     </label>
                                 <?php endforeach; ?>
                             </div>

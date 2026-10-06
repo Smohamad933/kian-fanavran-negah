@@ -26,6 +26,8 @@ foreach ($partnerBrandSource as $partnerBrand) {
 $partnerLogoData = json_encode($partnerLogoBrands, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?: '[]';
 $partnerLogoCount = count($partnerLogoBrands);
 $partnerLogoReserveIndex = $partnerLogoCount > 10 ? 10 : -1;
+$partnerLogoInterval = max(5, min(120, (int) ($settings['partner_logo_interval'] ?? 12)));
+$partnerLogoBatchSize = max(1, min(5, (int) ($settings['partner_logo_batch_size'] ?? 3)));
 ?>
 <!doctype html>
 <html lang="fa" dir="rtl">
@@ -204,7 +206,7 @@ $partnerLogoReserveIndex = $partnerLogoCount > 10 ? 10 : -1;
                 </div>
                 <?php if ($partnerLogoBrands !== []): ?>
                     <div class="partners-logo-panel">
-                        <div class="partners-logo-grid" data-logo-wall role="group" aria-label="لوگوهای برندهای همکار">
+                        <div class="partners-logo-grid" data-logo-wall data-logo-interval="<?= e((string) $partnerLogoInterval) ?>" data-logo-batch-size="<?= e((string) $partnerLogoBatchSize) ?>" role="group" aria-label="لوگوهای برندهای همکار">
                             <?php foreach (array_slice($partnerLogoBrands, 0, 11) as $partnerIndex => $partner): ?>
                                 <a class="partner-logo-cell" data-logo-slot<?= $partnerIndex === $partnerLogoReserveIndex ? ' data-logo-reserve' : '' ?> data-logo-index="<?= e((string) $partner['index']) ?>" href="<?= e($partner['href']) ?>" title="<?= e($partner['name']) ?>" aria-label="مشاهدهٔ صفحهٔ <?= e($partner['name']) ?>">
                                     <span class="partner-logo-art" data-logo-art>

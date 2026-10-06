@@ -283,6 +283,8 @@ INSERT IGNORE INTO site_settings (setting_key, setting_value) VALUES
 ('portfolio_cta', 'پروژه بعدی را با هم بسازیم'),
 ('partners_eyebrow', 'اعتمادهای دوطرفه'),
 ('partners_title', 'برندهایی که هم‌مسیر نگاه‌اند'),
+('partner_logo_interval', '12'),
+('partner_logo_batch_size', '3'),
 ('about_eyebrow', 'نگاه ما به ماجرا'),
 ('about_title', 'خلاقیت، وقتی\nاثرگذار است که\nجهت داشته باشد.'),
 ('about_description', 'ما یک تیم مستقل از استراتژیست‌ها، طراحان و سازندگانیم؛ با یک باور مشترک: تبلیغات خوب فقط دیده نمی‌شود، چیزی را در رفتار و ذهن مخاطب تغییر می‌دهد.'),

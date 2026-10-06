@@ -128,14 +128,21 @@
 
   const logoWall = document.querySelector('[data-logo-wall]');
   const logoPoolNode = document.querySelector('[data-logo-pool]');
-  if (logoWall && logoPoolNode && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+  if (logoWall && logoPoolNode && !reducedMotionQuery.matches) {
     let logoPool = [];
     try { logoPool = JSON.parse(logoPoolNode.textContent || '[]'); } catch (error) { logoPool = []; }
     const logoSlots = Array.from(logoWall.querySelectorAll('[data-logo-slot]:not([data-logo-reserve])'));
+    const parseBoundedInteger = (value, fallback, min, max) => {
+      const parsed = Number.parseInt(value || '', 10);
+      return Number.isFinite(parsed) ? Math.max(min, Math.min(max, parsed)) : fallback;
+    };
+    const intervalSeconds = parseBoundedInteger(logoWall.dataset.logoInterval, 12, 5, 120);
+    const requestedBatchSize = parseBoundedInteger(logoWall.dataset.logoBatchSize, 3, 1, 5);
     if (logoSlots.length > 1 && logoPool.length > logoSlots.length) {
-      const visibleLogos = logoSlots.map((slot) => logoPool[Number(slot.dataset.logoIndex)]).filter(Boolean);
+      const visibleLogos = logoSlots.map((slot) => logoPool[Number(slot.dataset.logoIndex)]);
       const waitingLogos = logoPool.slice(logoSlots.length);
-      let lastSlotIndex = -1;
+      let previousChangedSlots = new Set();
       let isChanging = false;
 
       const makeWordmark = (name) => {
@@ -167,31 +174,54 @@
           art.appendChild(makeWordmark(brand.name || ''));
         }
       };
-      const transitionLogo = (slot, brand) => {
-        if (isChanging) return;
+      const shuffle = (items) => {
+        for (let index = items.length - 1; index > 0; index -= 1) {
+          const randomIndex = Math.floor(Math.random() * (index + 1));
+          [items[index], items[randomIndex]] = [items[randomIndex], items[index]];
+        }
+        return items;
+      };
+      const transitionLogos = (changes) => {
+        if (isChanging || changes.length === 0) return;
         isChanging = true;
-        slot.classList.add('is-swapping');
+        changes.forEach(({ slot }) => slot.classList.add('is-swapping'));
         window.setTimeout(() => {
-          applyLogo(slot, brand);
+          changes.forEach(({ slot, brand }) => applyLogo(slot, brand));
           window.requestAnimationFrame(() => {
-            slot.classList.remove('is-swapping');
+            changes.forEach(({ slot }) => slot.classList.remove('is-swapping'));
             isChanging = false;
           });
         }, 360);
       };
       const rotateLogos = () => {
-        if (document.hidden || window.matchMedia('(prefers-reduced-motion: reduce)').matches || isChanging || logoWall.matches(':hover') || logoWall.contains(document.activeElement)) return;
-        let slotIndex = Math.floor(Math.random() * logoSlots.length);
-        if (slotIndex === lastSlotIndex) slotIndex = (slotIndex + 1) % logoSlots.length;
-        const incoming = waitingLogos.shift();
-        const outgoing = visibleLogos[slotIndex];
-        if (!incoming || !outgoing) return;
-        lastSlotIndex = slotIndex;
-        waitingLogos.push(outgoing);
-        visibleLogos[slotIndex] = incoming;
-        transitionLogo(logoSlots[slotIndex], incoming);
+        if (document.hidden || reducedMotionQuery.matches || isChanging || logoWall.matches(':hover') || logoWall.contains(document.activeElement)) return;
+        const changeCount = Math.min(requestedBatchSize, logoSlots.length, waitingLogos.length);
+        if (changeCount < 1) return;
+
+        const allSlotIndexes = Array.from({ length: logoSlots.length }, (_, index) => index);
+        const availableSlotIndexes = allSlotIndexes.filter((index) => !previousChangedSlots.has(index));
+        const slotIndexes = shuffle((availableSlotIndexes.length >= changeCount ? availableSlotIndexes : allSlotIndexes.slice())).slice(0, changeCount);
+        const changes = [];
+        const changedIndexes = [];
+
+        slotIndexes.forEach((slotIndex) => {
+          const incomingIndex = Math.floor(Math.random() * waitingLogos.length);
+          const [incoming] = waitingLogos.splice(incomingIndex, 1);
+          const outgoing = visibleLogos[slotIndex];
+          if (!incoming || !outgoing) {
+            if (incoming) waitingLogos.push(incoming);
+            return;
+          }
+          waitingLogos.push(outgoing);
+          visibleLogos[slotIndex] = incoming;
+          changes.push({ slot: logoSlots[slotIndex], brand: incoming });
+          changedIndexes.push(slotIndex);
+        });
+
+        if (changedIndexes.length > 0) previousChangedSlots = new Set(changedIndexes);
+        transitionLogos(changes);
       };
-      window.setInterval(rotateLogos, 5200);
+      window.setInterval(rotateLogos, intervalSeconds * 1000);
     }
   }
 })();
